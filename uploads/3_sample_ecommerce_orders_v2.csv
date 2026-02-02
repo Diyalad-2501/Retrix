@@ -1,0 +1,21 @@
+order_id,order_date,catalogue_id,sku_description,item_price,quantity,order_price,order_status,return_type,return_cost,return_reason
+200001,12-02-2025,764833300,Men's Kurta Yellow,1729,4,6916,cancelled,,0,
+200002,05-02-2025,687439930,Men's Kurta Black,1705,4,6820,returned,customer_return,105,Color mismatch
+200003,03-02-2025,781905396,Men's Kurta Black,1115,1,1115,returned,customer_return,148,Size issue
+200004,09-02-2025,736916286,Men's Kurta Black,1414,2,2828,returned,customer_return,191,Damaged product
+200005,02-02-2025,832061595,Men's Kurta Black,1151,3,3453,cancelled,,0,
+200006,18-02-2025,438186509,Men's Kurta Yellow,1639,3,4917,cancelled,,0,
+200007,10-02-2025,627121980,Men's Kurta Green,603,2,1206,cancelled,,0,
+200008,01-02-2025,784537805,Men's Kurta Green,1019,3,3057,returned,customer_return,61,Size issue
+200009,09-02-2025,715785866,Men's Kurta Yellow,783,3,2349,cancelled,,0,
+200010,17-02-2025,781502713,Men's Kurta Navy Blue,1555,4,6220,delivered,,0,
+200011,12-02-2025,883171655,Men's Kurta Black,1301,2,2602,cancelled,,0,
+200012,09-02-2025,403635124,Men's Kurta Navy Blue,1365,2,2730,cancelled,,0,
+200013,16-02-2025,331643669,Men's Kurta Black,1117,1,1117,delivered,,0,
+200014,13-02-2025,798418865,Men's Kurta Green,1406,2,2812,delivered,,0,
+200015,10-02-2025,477680432,Men's Kurta Grey,1216,4,4864,cancelled,,0,
+200016,13-02-2025,487602753,Men's Kurta Green,1243,4,4972,cancelled,,0,
+200017,12-02-2025,848416440,Men's Kurta Grey,1401,2,2802,delivered,,0,
+200018,01-02-2025,716397729,Men's Kurta Black,1098,1,1098,delivered,,0,
+200019,09-02-2025,546711585,Men's Kurta Grey,1758,1,1758,delivered,,0,
+200020,02-02-2025,508929770,Men's Kurta Green,1704,1,1704,returned,customer_return,123,Damaged product
