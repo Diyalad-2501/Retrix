@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retrix - Analytics Platform for Sellers</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-subtle: #4facfe;
+            --secondary-subtle: #8a2be2;
+            --accent-subtle: #9400d3;
+            --card-bg: rgba(138, 43, 226, 0.15);
+            --card-border: rgba(138, 43, 226, 0.3);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 25%, #2d1b4e 50%, #1a1a4e 75%, #0d0d2b 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        
+        /* Navbar */
+        .navbar {
+            background: rgba(10, 10, 26, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(138, 43, 226, 0.2);
+        }
+        
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            background: linear-gradient(135deg, #4facfe 0%, #8a2be2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: #4facfe !important;
+        }
+        
+        .btn-login {
+            background: transparent;
+            border: 1px solid rgba(79, 172, 254, 0.5);
+            color: #4facfe;
+            padding: 8px 25px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-login:hover {
+            background: rgba(79, 172, 254, 0.1);
+            border-color: #4facfe;
+            color: #4facfe;
+        }
+        
+        .btn-signup {
+            background: linear-gradient(135deg, #4facfe 0%, #8a2be2 100%);
+            border: none;
+            color: #fff;
+            padding: 8px 25px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-signup:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(138, 43, 226, 0.4);
+            color: #fff;
+        }
+        
+        /* Hero Section */
+        .hero {
+            padding: 150px 0 100px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #4facfe 0%, #8a2be2 50%, #9400d3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .btn-start {
+            background: linear-gradient(135deg, #4facfe 0%, #8a2be2 100%);
+            border: none;
+            color: #fff;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-start:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(138, 43, 226, 0.5);
+            color: #fff;
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 100px 0;
+        }
+        
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 60px;
+            letter-spacing: 2px;
+        }
+        
+        .feature-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 15px;
+            padding: 40px 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(79, 172, 254, 0.5);
+            box-shadow: 0 15px 40px rgba(138, 43, 226, 0.2);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #4facfe, #8a2be2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .feature-card h4 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+        
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        /* How It Works */
+        .how-it-works {
+            padding: 100px 0;
+            background: rgba(10, 10, 26, 0.5);
+        }
+        
+        .step {
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .step-number {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4facfe, #8a2be2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 auto 20px;
+        }
+        
+        .step h4 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        
+        .step p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+        
+        /* FAQs Section */
+        .faqs {
+            padding: 100px 0;
+        }
+        
+        .accordion-item {
+            background: rgba(138, 43, 226, 0.1);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            border-radius: 10px !important;
+            margin-bottom: 15px;
+        }
+        
+        .accordion-button {
+            background: transparent;
+            color: #fff;
+            font-weight: 500;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-right: 15px;
+        }
+        
+        .accordion-button span {
+            flex: 1;
+        }
+        
+        .faq-icon {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            transition: transform 0.3s ease;
+        }
+        
+        .accordion-button:not(.collapsed) .faq-icon {
+            transform: rotate(45deg);
+            color: #4facfe;
+        }
+        
+        .accordion-button:not(.collapsed) {
+            background: rgba(138, 43, 226, 0.2);
+            color: #4facfe;
+        }
+        
+        .accordion-button:focus {
+            box-shadow: none;
+        }
+        
+        .accordion-body {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        /* About Section */
+        .about {
+            padding: 100px 0;
+            background: rgba(10, 10, 26, 0.5);
+        }
+        
+        .about-content {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .about-content p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        
+        /* Footer */
+        footer {
+            background: rgba(10, 10, 26, 0.9);
+            padding: 50px 0 20px;
+            border-top: 1px solid rgba(138, 43, 226, 0.2);
+        }
+        
+        .footer-brand {
+            font-size: 1.3rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #4facfe 0%, #8a2be2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        
+        .footer-links h5 {
+            font-size: 1rem;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+        
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            color: #4facfe;
+        }
+        
+        .footer-bottom {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid rgba(138, 43, 226, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .feature-card {
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">RETRIX</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#how-it-works">How It Works</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">About Us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#faqs">FAQs</a>
+                    </li>
+                    <li class="nav-item ms-3">
+                        <a href="/login-selection" class="btn btn-login">Login</a>
+                    </li>
+                    <li class="nav-item ms-2">
+                        <a href="/register" class="btn btn-signup">Sign Up</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title">Smart Analytics for Growing Sellers</h1>
+            <p class="hero-subtitle">Unlock the power of your sales data. Get actionable insights, track performance, and make data-driven decisions with Retrix.</p>
+            <a href="/register" class="btn btn-start">Start Selling</a>
+        </div>
+    </section>
+    
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <h2 class="section-title">Why Choose Retrix?</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-chart-line feature-icon"></i>
+                        <h4>Sales Analytics</h4>
+                        <p>Track your sales performance in real-time with detailed reports and visualizations.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-users feature-icon"></i>
+                        <h4>Customer Insights</h4>
+                        <p>Understand your customers better with behavior analysis and segmentation tools.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-boxes feature-icon"></i>
+                        <h4>Inventory Management</h4>
+                        <p>Never run out of stock. Manage inventory efficiently with smart predictions.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-trending-up feature-icon"></i>
+                        <h4>Revenue Trends</h4>
+                        <p>Identify trends and patterns to maximize your revenue growth opportunities.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-bolt feature-icon"></i>
+                        <h4>Performance Metrics</h4>
+                        <p>Monitor key performance indicators and optimize your business operations.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-shield-alt feature-icon"></i>
+                        <h4>Secure & Private</h4>
+                        <p>Your data is safe with enterprise-grade security and privacy protection.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <h2 class="section-title">How It Works</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h4>Upload Your Data</h4>
+                        <p>Simply upload your CSV files or connect your existing data sources.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h4>AI Analysis</h4>
+                        <p>Our intelligent system analyzes your data and generates insights automatically.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h4>Take Action</h4>
+                        <p>Use the insights to make data-driven decisions and grow your business.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- About Section -->
+    <section class="about" id="about">
+        <div class="container">
+            <h2 class="section-title">About Us</h2>
+            <div class="about-content">
+                <p>Retrix is a powerful analytics platform designed specifically for sellers who want to leverage their data to make smarter business decisions.</p>
+                <p>We believe that every seller deserves access to advanced analytics without the complexity. Our platform simplifies data analysis, making it easy to understand your business performance and identify growth opportunities.</p>
+                <p>With Retrix, you can focus on what you do best – selling – while we handle the data analysis behind the scenes.</p>
+                <a href="#features" class="btn btn-start mt-4">Explore More</a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- FAQs Section -->
+    <section class="faqs" id="faqs">
+        <div class="container">
+            <h2 class="section-title">Frequently Asked Questions</h2>
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    <span>How do I get started with Retrix?</span>
+                                    <i class="fas fa-plus faq-icon"></i>
+                                </button>
+                            </h2>
+                            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Getting started is easy! Simply click the "Start Selling" button and create your free account. Once registered, you can upload your first data file and start seeing insights immediately.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    <span>What file formats are supported?</span>
+                                    <i class="fas fa-plus faq-icon"></i>
+                                </button>
+                            </h2>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Retrix supports CSV files for data uploads. Our system can handle various CSV formats including sales data, customer data, inventory lists, and more.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    <span>Is my data secure?</span>
+                                    <i class="fas fa-plus faq-icon"></i>
+                                </button>
+                            </h2>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Yes! We take data security very seriously. All data is encrypted both in transit and at rest. We never share your data with third parties, and you can delete your data at any time.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                    <span>How much does Retrix cost?</span>
+                                    <i class="fas fa-plus faq-icon"></i>
+                                </button>
+                            </h2>
+                            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Retrix offers a free tier for small sellers. We also have premium plans with advanced features for growing businesses. Check our pricing page for more details.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                    <span>What kind of analytics does Retrix provide?</span>
+                                    <i class="fas fa-plus faq-icon"></i>
+                                </button>
+                            </h2>
+                            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Retrix provides comprehensive analytics including sales trends, customer behavior analysis, inventory insights, revenue tracking, return analysis, and catalogue performance metrics to help you make data-driven decisions.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
+                                    <span>Can I upload multiple data files?</span>
+                                    <i class="fas fa-plus faq-icon"></i>
+                                </button>
+                            </h2>
+                            <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Yes! You can upload multiple CSV files to analyze different time periods or data types. Our system will aggregate and analyze all your data to provide comprehensive insights.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq7">
+                                    <span>Does Retrix offer customer support?</span>
+                                    <i class="fas fa-plus faq-icon"></i>
+                                </button>
+                            </h2>
+                            <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Yes! We offer dedicated customer support through email and live chat. Our team is available to help you with any questions, technical issues, or guidance on using the platform effectively.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- CTA Section -->
+    <section class="text-center py-5" style="background: rgba(138, 43, 226, 0.1);">
+        <div class="container">
+            <h2 class="mb-4">Ready to Transform Your Business?</h2>
+            <a href="/register" class="btn btn-start">Start Selling Now</a>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <span class="footer-brand">RETRIX</span>
+                    <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; margin-top: 15px;">
+                        Empowering sellers with powerful analytics to grow their business.
+                    </p>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <div class="footer-links">
+                        <h5>Quick Links</h5>
+                        <a href="#features">Features</a>
+                        <a href="#how-it-works">How It Works</a>
+                        <a href="#about">About Us</a>
+                        <a href="#faqs">FAQs</a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <div class="footer-links">
+                        <h5>Account</h5>
+                        <a href="/login-selection">Login</a>
+                        <a href="/seller-register">Sign Up</a>
+                        <a href="/seller-forgot-password">Forgot Password</a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <div class="footer-links">
+                        <h5>Legal</h5>
+                        <a href="#">Privacy Policy</a>
+                        <a href="#">Terms of Service</a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <div class="footer-links">
+                        <h5>Contact</h5>
+                        <a href="#">support@retrix.com</a>
+                        <a href="#">Help Center</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Retrix. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

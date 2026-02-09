@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retrix - Seller Registration</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 25%, #2d1b4e 50%, #1a1a4e 75%, #0d0d2b 100%);
+        }
+        
+        .background-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        .analytics-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .bar-chart {
+            position: absolute;
+            display: flex;
+            align-items: flex-end;
+            gap: 5px;
+            bottom: 15%;
+            left: 8%;
+            opacity: 0.08;
+        }
+        
+        .bar {
+            width: 18px;
+            background: #4facfe;
+            border-radius: 3px 3px 0 0;
+            animation: growBar 3s ease-in-out infinite;
+        }
+        
+        .bar:nth-child(1) { height: 60px; animation-delay: 0s; }
+        .bar:nth-child(2) { height: 90px; animation-delay: 0.2s; }
+        .bar:nth-child(3) { height: 45px; animation-delay: 0.4s; }
+        .bar:nth-child(4) { height: 75px; animation-delay: 0.6s; }
+        .bar:nth-child(5) { height: 55px; animation-delay: 0.8s; }
+        
+        @keyframes growBar {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.15); }
+        }
+        
+        .pie-chart {
+            position: absolute;
+            bottom: 25%;
+            right: 15%;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #4facfe 0deg 120deg,
+                #00f2fe 120deg 240deg,
+                #ff6b6b 240deg 360deg
+            );
+            opacity: 0.08;
+            animation: rotatePie 25s linear infinite;
+        }
+        
+        @keyframes rotatePie {
+            to { transform: rotate(360deg); }
+        }
+        
+        .floating-number {
+            position: absolute;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: rgba(79, 172, 254, 0.15);
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-25px); }
+        }
+        
+        .data-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #4facfe;
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.5); opacity: 0.15; }
+        }
+        
+        .connection-line {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(79, 172, 254, 0.15), transparent);
+            animation: connect 5s ease-in-out infinite;
+        }
+        
+        @keyframes connect {
+            0%, 100% { opacity: 0; width: 0; }
+            50% { opacity: 1; width: 150px; }
+        }
+        
+        .register-wrapper {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 15px;
+        }
+        
+        .register-container {
+            width: 100%;
+            max-width: 480px;
+        }
+        
+        .register-box {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 45px 35px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        }
+        
+        .logo-wrapper {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+        
+        .logo span {
+            color: #4facfe;
+        }
+        
+        .form-title {
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .icon-input {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        .icon-input i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .form-control-custom {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px 20px 14px 45px;
+            color: #fff;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control-custom:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #4facfe;
+            box-shadow: 0 0 0 0.2rem rgba(79, 172, 254, 0.2);
+            color: #fff;
+        }
+        
+        .form-control-custom::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            padding: 14px 30px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 15px;
+            color: #fff;
+        }
+        
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.4);
+            color: #fff;
+        }
+        
+        .link-custom {
+            color: #4facfe;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .link-custom:hover {
+            color: #00f2fe;
+            text-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .back-link:hover {
+            color: #4facfe;
+        }
+        
+        .password-requirements {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .password-requirements h6 {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+        }
+        
+        .requirement {
+            display: flex;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .requirement i {
+            margin-right: 10px;
+            width: 16px;
+        }
+        
+        .requirement.invalid {
+            color: #ff6b6b;
+        }
+        
+        .requirement.invalid i {
+            color: #ff6b6b;
+        }
+        
+        .requirement.valid {
+            color: #48bb78;
+        }
+        
+        .requirement.valid i {
+            color: #48bb78;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+        }
+        
+        .flash-messages {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        @media (max-width: 480px) {
+            .register-box {
+                padding: 35px 25px;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .form-title {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="background-container">
+        <div class="analytics-bg">
+            <!-- Bar Chart -->
+            <div class="bar-chart">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+            
+            <!-- Pie Chart -->
+            <div class="pie-chart"></div>
+            
+            <!-- Floating Numbers -->
+            <div class="floating-number" style="top: 18%; left: 5%;">85%</div>
+            <div class="floating-number" style="top: 25%; right: 8%;">$2.4M</div>
+            <div class="floating-number" style="bottom: 35%; left: 12%;">1.2K</div>
+            <div class="floating-number" style="bottom: 18%; right: 5%;">98%</div>
+            
+            <!-- Data Points -->
+            <div class="data-point" style="top: 22%; left: 28%;"></div>
+            <div class="data-point" style="top: 40%; right: 22%;"></div>
+            <div class="data-point" style="bottom: 30%; left: 38%;"></div>
+            <div class="data-point" style="bottom: 12%; right: 32%;"></div>
+            
+            <!-- Connection Lines -->
+            <div class="connection-line" style="top: 28%; left: 32%; transform: rotate(25deg);"></div>
+            <div class="connection-line" style="top: 45%; right: 28%; transform: rotate(-18deg);"></div>
+        </div>
+    </div>
+    
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    
+    <div class="register-wrapper">
+        <div class="register-container">
+            <a href="/login-selection" class="back-link">
+                <i class="fas fa-arrow-left me-2"></i>Back
+            </a>
+            
+            <div class="register-box">
+                <div class="logo-wrapper">
+                    <h1 class="logo">Ret<span>rix</span></h1>
+                </div>
+                
+                <h3 class="form-title">Create Account</h3>
+                
+                <form method="POST" action="/seller-register">
+                    <div class="icon-input">
+                        <i class="fas fa-user"></i>
+                        <input type="text" class="form-control form-control-custom" name="name" 
+                               placeholder="Seller Name / Business Name" required>
+                    </div>
+                    
+                    <div class="icon-input">
+                        <i class="fas fa-store"></i>
+                        <input type="text" class="form-control form-control-custom" name="store_name" 
+                               placeholder="Store Name" required>
+                    </div>
+                    
+                    <div class="icon-input">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" class="form-control form-control-custom" name="email" 
+                               placeholder="Email Address" required>
+                    </div>
+                    
+                    <div class="icon-input">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" class="form-control form-control-custom" id="password" name="password" 
+                               placeholder="Password" required>
+                    </div>
+                    
+                    <div class="icon-input">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" class="form-control form-control-custom" name="confirm_password" 
+                               placeholder="Confirm Password" required>
+                    </div>
+                    
+                    <div class="password-requirements">
+                        <h6><i class="fas fa-info-circle me-2"></i>Password Requirements:</h6>
+                        <div class="requirement" id="req-length"><i class="fas fa-circle"></i>At least 8 characters</div>
+                        <div class="requirement" id="req-upper"><i class="fas fa-circle"></i>One uppercase letter</div>
+                        <div class="requirement" id="req-lower"><i class="fas fa-circle"></i>One lowercase letter</div>
+                        <div class="requirement" id="req-number"><i class="fas fa-circle"></i>One number</div>
+                        <div class="requirement" id="req-special"><i class="fas fa-circle"></i>One special character</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary-custom">
+                        <i class="fas fa-user-plus me-2"></i>Create Account
+                    </button>
+                </form>
+                
+                <div class="text-center mt-4">
+                    <p style="color: rgba(255, 255, 255, 0.5); font-size: 0.9rem;">
+                        Already have an account? 
+                        <a href="/seller-login" class="link-custom">Login</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const passwordInput = document.getElementById('password');
+        const requirements = {
+            length: /.{8,}/,
+            upper: /[A-Z]/,
+            lower: /[a-z]/,
+            number: /[0-9]/,
+            special: /[!@#$%^&*(),.?":{}|<>]/
+        };
+        
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            
+            document.getElementById('req-length').classList.toggle('valid', requirements.length.test(password));
+            document.getElementById('req-length').classList.toggle('invalid', !requirements.length.test(password) && password.length > 0);
+            
+            document.getElementById('req-upper').classList.toggle('valid', requirements.upper.test(password));
+            document.getElementById('req-upper').classList.toggle('invalid', !requirements.upper.test(password) && password.length > 0);
+            
+            document.getElementById('req-lower').classList.toggle('valid', requirements.lower.test(password));
+            document.getElementById('req-lower').classList.toggle('invalid', !requirements.lower.test(password) && password.length > 0);
+            
+            document.getElementById('req-number').classList.toggle('valid', requirements.number.test(password));
+            document.getElementById('req-number').classList.toggle('invalid', !requirements.number.test(password) && password.length > 0);
+            
+            document.getElementById('req-special').classList.toggle('valid', requirements.special.test(password));
+            document.getElementById('req-special').classList.toggle('invalid', !requirements.special.test(password) && password.length > 0);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retrix - Registration Successful</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 25%, #2d1b4e 50%, #1a1a4e 75%, #0d0d2b 100%);
+        }
+        
+        .background-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        .analytics-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .bar-chart {
+            position: absolute;
+            display: flex;
+            align-items: flex-end;
+            gap: 5px;
+            bottom: 15%;
+            left: 8%;
+            opacity: 0.08;
+        }
+        
+        .bar {
+            width: 18px;
+            background: linear-gradient(to top, #4facfe, #8a2be2);
+            border-radius: 3px 3px 0 0;
+            animation: growBar 3s ease-in-out infinite;
+        }
+        
+        .bar:nth-child(1) { height: 60px; animation-delay: 0s; }
+        .bar:nth-child(2) { height: 90px; animation-delay: 0.2s; }
+        .bar:nth-child(3) { height: 45px; animation-delay: 0.4s; }
+        .bar:nth-child(4) { height: 75px; animation-delay: 0.6s; }
+        .bar:nth-child(5) { height: 55px; animation-delay: 0.8s; }
+        
+        @keyframes growBar {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.15); }
+        }
+        
+        .pie-chart {
+            position: absolute;
+            bottom: 25%;
+            right: 15%;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #4facfe 0deg 120deg,
+                #8a2be2 120deg 240deg,
+                #9400d3 240deg 360deg
+            );
+            opacity: 0.08;
+            animation: rotatePie 25s linear infinite;
+        }
+        
+        @keyframes rotatePie {
+            to { transform: rotate(360deg); }
+        }
+        
+        .floating-number {
+            position: absolute;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: rgba(138, 43, 226, 0.4);
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-25px); }
+        }
+        
+        .data-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #8a2be2;
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.5); opacity: 0.15; }
+        }
+        
+        .connection-line {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(138, 43, 226, 0.2), transparent);
+            animation: connect 5s ease-in-out infinite;
+        }
+        
+        @keyframes connect {
+            0%, 100% { opacity: 0; width: 0; }
+            50% { opacity: 1; width: 150px; }
+        }
+        
+        .login-wrapper {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 15px;
+        }
+        
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+        }
+        
+        .success-card {
+            background: rgba(138, 43, 226, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 20px;
+            padding: 45px 35px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+            text-align: center;
+        }
+        
+        .logo-wrapper {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+        
+        .logo span {
+            color: #8a2be2;
+            text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+        }
+        
+        .success-icon {
+            font-size: 4rem;
+            color: #22c55e;
+            margin-bottom: 20px;
+            animation: bounceIn 0.6s ease-out;
+        }
+        
+        @keyframes bounceIn {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .success-title {
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .success-message {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 30px;
+        }
+        
+        .code-display {
+            background: rgba(138, 43, 226, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(138, 43, 226, 0.3);
+        }
+        
+        .code-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        
+        .store-name {
+            color: #4facfe;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .unique-code {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #4facfe 0%, #8a2be2 50%, #9400d3 100%);
+            border: none;
+            padding: 14px 30px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            color: #fff;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(138, 43, 226, 0.5);
+            color: #fff;
+        }
+        
+        .copy-btn {
+            background: rgba(138, 43, 226, 0.1);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            color: rgba(255, 255, 255, 0.7);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+        
+        .copy-btn:hover {
+            background: rgba(138, 43, 226, 0.2);
+            color: #fff;
+        }
+        
+        .flash-messages {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        @media (max-width: 480px) {
+            .success-card {
+                padding: 35px 25px;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .unique-code {
+                font-size: 2rem;
+                letter-spacing: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="background-container">
+        <div class="analytics-bg">
+            <!-- Bar Chart -->
+            <div class="bar-chart">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+            
+            <!-- Pie Chart -->
+            <div class="pie-chart"></div>
+            
+            <!-- Floating Numbers -->
+            <div class="floating-number" style="top: 18%; left: 5%;">85%</div>
+            <div class="floating-number" style="top: 25%; right: 8%;">$2.4M</div>
+            <div class="floating-number" style="bottom: 35%; left: 12%;">1.2K</div>
+            <div class="floating-number" style="bottom: 18%; right: 5%;">98%</div>
+            
+            <!-- Data Points -->
+            <div class="data-point" style="top: 22%; left: 28%;"></div>
+            <div class="data-point" style="top: 40%; right: 22%;"></div>
+            <div class="data-point" style="bottom: 30%; left: 38%;"></div>
+            <div class="data-point" style="bottom: 12%; right: 32%;"></div>
+            
+            <!-- Connection Lines -->
+            <div class="connection-line" style="top: 28%; left: 32%; transform: rotate(25deg);"></div>
+            <div class="connection-line" style="top: 45%; right: 28%; transform: rotate(-18deg);"></div>
+        </div>
+    </div>
+    
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    
+    <div class="login-wrapper">
+        <div class="login-container">
+            <div class="success-card">
+                <div class="logo-wrapper">
+                    <h1 class="logo">Ret<span>rix</span></h1>
+                </div>
+                
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                
+                <h3 class="success-title">Registration Successful!</h3>
+                <p class="success-message">
+                    Your seller account has been created successfully. Here is your unique store code:
+                </p>
+                
+                <div class="code-display">
+                    <div class="code-label">Store Name</div>
+                    <div class="store-name">{{ store_name }}</div>
+                    <div class="code-label" style="margin-top: 15px;">Your Unique Code</div>
+                    <div class="unique-code">{{ unique_code }}</div>
+                    <button class="copy-btn" onclick="copyCode()">
+                        <i class="fas fa-copy me-2"></i>Copy Code
+                    </button>
+                </div>
+                
+                <p class="success-message" style="font-size: 0.85rem;">
+                    Please save this code. You will need it to identify your store.
+                </p>
+                
+                <a href="/seller-login" class="btn btn-primary-custom">
+                    <i class="fas fa-sign-in-alt me-2"></i>Proceed to Login
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function copyCode() {
+            const code = '{{ unique_code }}';
+            navigator.clipboard.writeText(code).then(function() {
+                alert('Code copied to clipboard!');
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
+    </script>
+</body>
+</html>

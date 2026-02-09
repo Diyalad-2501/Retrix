@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retrix</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-subtle: #194d7b;
+            --secondary-subtle: #8a2be2;
+            --accent-subtle: #9400d3;
+            --card-bg: rgba(138, 43, 226, 0.15);
+            --card-border: rgba(138, 43, 226, 0.3);
+            --contrast-1: #4facfe;
+            --contrast-2: #8a2be2;
+            --contrast-3: #9400d3;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 25%, #2d1b4e 50%, #1a1a4e 75%, #0d0d2b 100%);
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+        
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: float 10s ease-in-out infinite;
+        }
+        
+        .bg-orb-1 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(79, 172, 254, 0.25) 0%, rgba(138, 43, 226, 0.15) 50%, transparent 70%);
+            top: -150px;
+            left: -150px;
+            animation-delay: 0s;
+        }
+        
+        .bg-orb-2 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(148, 0, 211, 0.2) 0%, rgba(138, 43, 226, 0.15) 50%, transparent 70%);
+            bottom: -200px;
+            right: -200px;
+            animation-delay: -3s;
+        }
+        
+        .bg-orb-3 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(79, 172, 254, 0.2) 0%, rgba(138, 43, 226, 0.1) 50%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -6s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(40px, -40px) scale(1.05); }
+            66% { transform: translate(-30px, 30px) scale(0.95); }
+        }
+        
+        /* Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(79, 172, 254, 0.5);
+            border-radius: 50%;
+            animation: rise 8s ease-in-out infinite;
+        }
+        
+        @keyframes rise {
+            0% {
+                opacity: 0;
+                transform: translateY(100vh) scale(0);
+            }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% {
+                opacity: 0;
+                transform: translateY(-100vh) scale(1);
+            }
+        }
+        
+        /* Main Container */
+        .splash-container {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            padding: 20px;
+        }
+        
+        /* Retrix Logo with Fade In */
+        .logo-container {
+            margin-bottom: 80px;
+            position: relative;
+        }
+        
+        .retrix-logo {
+            font-size: 5rem;
+            font-weight: 700;
+            letter-spacing: 12px;
+            text-transform: uppercase;
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 1s ease-out forwards;
+            animation-delay: 0.5s;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .retrix-logo span {
+            display: inline-block;
+            background: linear-gradient(135deg, #4facfe 0%, #00d4ff 50%, #8a2be2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 20px rgba(138, 43, 226, 0.6));
+        }
+        
+        /* Glow effect behind logo */
+        .logo-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 120px;
+            background: radial-gradient(ellipse, rgba(138, 43, 226, 0.3) 0%, transparent 70%);
+            opacity: 0;
+            animation: glowPulse 3s ease-in-out infinite;
+            animation-delay: 0.5s;
+            pointer-events: none;
+        }
+        
+        @keyframes glowPulse {
+            0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
+        }
+        
+        /* Tagline */
+        .tagline {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 60px;
+            opacity: 0;
+            animation: fadeIn 1s ease-out forwards;
+            animation-delay: 1.2s;
+        }
+        
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        
+        /* Keywords Container */
+        .keywords-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            min-height: 60px;
+            margin-bottom: 60px;
+        }
+        
+        .keyword {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0;
+            transform: scale(0.5);
+            cursor: default;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .keyword.pop {
+            animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        
+        @keyframes popIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            70% {
+                transform: scale(1.15);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .keyword:hover {
+            color: #8a2be2;
+            text-shadow: 0 0 15px rgba(138, 43, 226, 0.6);
+            transform: scale(1.1);
+        }
+        
+        /* Loading Ring */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            opacity: 0;
+            animation: fadeIn 0.8s ease-out forwards;
+            animation-delay: 2.5s;
+        }
+        
+        .loading-ring {
+            position: relative;
+            width: 60px;
+            height: 60px;
+        }
+        
+        .loading-ring svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        
+        .loading-ring circle {
+            fill: none;
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+        
+        .loading-ring .bg-ring {
+            stroke: rgba(255, 255, 255, 0.1);
+        }
+        
+        .loading-ring .progress-ring {
+            stroke: url(#loadingGradient);
+            stroke-dasharray: 150;
+            stroke-dashoffset: 150;
+            animation: ringProgress 2.5s ease-out forwards;
+        }
+        
+        @keyframes ringProgress {
+            to { stroke-dashoffset: 0; }
+        }
+        
+        .loading-text {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.75rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        
+        /* Decorative Lines */
+        .decorative-line {
+            position: fixed;
+            width: 200px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #4facfe, #8a2be2, transparent);
+            z-index: 0;
+        }
+        
+        .line-1 { top: 30%; left: 10%; transform: rotate(-15deg); }
+        .line-2 { bottom: 25%; right: 10%; transform: rotate(-15deg); }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .retrix-logo {
+                font-size: 3rem;
+                letter-spacing: 6px;
+            }
+            
+            .keyword {
+                padding: 10px 18px;
+                font-size: 0.75rem;
+            }
+            
+            .keywords-container {
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="bg-orb bg-orb-1"></div>
+        <div class="bg-orb bg-orb-2"></div>
+        <div class="bg-orb bg-orb-3"></div>
+    </div>
+    
+    <!-- Particles -->
+    <div class="particles" id="particles"></div>
+    
+    <!-- Decorative Lines -->
+    <div class="decorative-line line-1"></div>
+    <div class="decorative-line line-2"></div>
+    
+    <div class="splash-container">
+        <!-- Logo with Fade In -->
+        <div class="logo-container">
+            <div class="logo-glow"></div>
+            <h1 class="retrix-logo"><span>Retrix</span></h1>
+        </div>
+        
+        <!-- Tagline -->
+        <p class="tagline">Analytics Platform</p>
+        
+        <!-- Keywords popping up one by one -->
+        <div class="keywords-container">
+            <span class="keyword" data-delay="2000">Analytics</span>
+            <span class="keyword" data-delay="2200">Insights</span>
+            <span class="keyword" data-delay="2400">Intelligence</span>
+        </div>
+        
+        <!-- Loading Ring -->
+        <div class="loading-container">
+            <div class="loading-ring">
+                <svg viewBox="0 0 60 60">
+                    <defs>
+                        <linearGradient id="loadingGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#4facfe"/>
+                            <stop offset="50%" style="stop-color:#8a2be2"/>
+                            <stop offset="100%" style="stop-color:#9400d3"/>
+                        </linearGradient>
+                    </defs>
+                    <circle class="bg-ring" cx="30" cy="30" r="24"/>
+                    <circle class="progress-ring" cx="30" cy="30" r="24"/>
+                </svg>
+            </div>
+            <p class="loading-text">Loading...</p>
+        </div>
+    </div>
+    
+    <script>
+        // Generate particles
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 8 + 's';
+            particle.style.animationDuration = (6 + Math.random() * 4) + 's';
+            particlesContainer.appendChild(particle);
+        }
+        
+        // Keywords popping in one by one
+        const keywords = document.querySelectorAll('.keyword');
+        keywords.forEach(keyword => {
+            const delay = parseInt(keyword.dataset.delay);
+            setTimeout(() => {
+                keyword.classList.add('pop');
+            }, delay);
+        });
+        
+        // Redirect after loading completes
+        setTimeout(() => {
+            document.body.style.transition = 'opacity 0.5s ease-out';
+            document.body.style.opacity = '0';
+            
+            setTimeout(() => {
+                window.location.href = '/login-selection';
+            }, 500);
+        }, 4500);
+    </script>
+</body>
+</html>

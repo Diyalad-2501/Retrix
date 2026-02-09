@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retrix - Month Comparison</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-subtle: #4facfe;
+            --secondary-subtle: #8a2be2;
+            --accent-subtle: #9400d3;
+            --card-bg: rgba(138, 43, 226, 0.15);
+            --card-border: rgba(138, 43, 226, 0.3);
+        }
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 25%, #2d1b4e 50%, #1a1a4e 75%, #0d0d2b 100%);
+            min-height: 100vh;
+        }
+        .sidebar {
+            min-height: 100vh;
+            width: 260px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 100;
+            background: linear-gradient(180deg, #1a1a3e 0%, #2d1b4e 100%);
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar.collapsed { width: 70px; }
+        .sidebar.collapsed ~ .main-content { margin-left: 70px; }
+        .sidebar.collapsed .sidebar-link-text { display: none; }
+        .sidebar.collapsed .sidebar-brand {
+            padding: 20px 10px;
+        }
+        .sidebar.collapsed .sidebar-brand h4 { font-size: 0; }
+        .sidebar.collapsed .sidebar-brand h4 i { margin-right: 0; }
+        .sidebar.collapsed .nav-indicator { display: none; }
+        .sidebar.collapsed .menu-toggle {
+            right: 50%;
+            transform: translateX(50%);
+        }
+        .sidebar.collapsed a:not(.logout-btn-bottom) {
+            justify-content: center;
+            padding: 14px;
+            margin: 4px 10px;
+        }
+        .sidebar.collapsed a:not(.logout-btn-bottom) i {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        .sidebar-top-actions {
+            display: flex;
+            align-items: center;
+            padding: 20px 20px 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+        .sidebar-brand { padding: 0; }
+        .sidebar-brand h4 {
+            color: #fff;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+        .menu-toggle {
+            position: absolute;
+            right: 10px;
+            top: 18px;
+            z-index: 200;
+            background: rgba(79, 172, 254, 0.3);
+            border: none;
+            color: #fff;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .menu-toggle:hover { background: rgba(79, 172, 254, 0.5); }
+        .sidebar a {
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 3px solid transparent;
+            margin: 4px 10px;
+            border-radius: 8px;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: linear-gradient(90deg, rgba(79, 172, 254, 0.2) 0%, transparent 100%);
+            color: #fff;
+            border-left-color: var(--accent-subtle);
+            transform: translateX(5px);
+        }
+        .sidebar a i { width: 24px; text-align: center; }
+        .logout-btn-bottom {
+            margin-top: auto;
+            background: rgba(245, 101, 101, 0.2);
+            border: 1px solid rgba(245, 101, 101, 0.3);
+            color: #fc8181;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 10px;
+        }
+        .logout-btn-bottom:hover {
+            background: rgba(245, 101, 101, 0.3);
+            color: #f56565;
+        }
+        .main-content {
+            margin-left: 260px;
+            padding: 30px;
+            transition: margin-left 0.3s ease;
+        }
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .welcome-text { color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; }
+        .welcome-text span { color: #fff; font-weight: 500; }
+        
+        .card-custom {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 25px;
+        }
+        .card-custom .card-body {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 25px;
+        }
+        .card-custom h5 { color: #fff; font-weight: 500; margin-bottom: 20px; }
+        .card-custom h6 { color: var(--primary-subtle); font-weight: 600; margin-bottom: 8px; }
+        
+        .filter-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .form-label { color: rgba(255, 255, 255, 0.7); font-size: 0.85rem; margin-bottom: 8px; }
+        .form-select, .form-control {
+            background: rgba(138, 43, 226, 0.1);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            color: #fff;
+            border-radius: 10px;
+            padding: 12px 15px;
+        }
+        .form-select:focus, .form-control:focus {
+            background: rgba(138, 43, 226, 0.15);
+            border-color: var(--primary-subtle);
+            color: #fff;
+            box-shadow: 0 0 0 0.2rem rgba(79, 172, 254, 0.25);
+        }
+        .form-select option { background: #1a1a3e; color: #fff; }
+        
+        .btn-compare {
+            background: linear-gradient(135deg, #4facfe 0%, #8a2be2 100%);
+            border: none;
+            padding: 12px 28px;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .btn-compare:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
+            background: linear-gradient(135deg, #8a2be2 0%, #4facfe 100%);
+        }
+        
+        .insight-card {
+            background: rgba(79, 172, 254, 0.1);
+            border: 1px solid rgba(79, 172, 254, 0.2);
+            border-left: 3px solid var(--primary-subtle);
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 15px;
+        }
+        .insight-card p { color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; margin: 0; line-height: 1.6; }
+        .insight-card .text-success { color: #68d391 !important; }
+        .insight-card .text-danger { color: #fc8181 !important; }
+        .insight-card .text-warning { color: #fbbf24 !important; }
+        .insight-card .text-primary { color: var(--primary-subtle) !important; }
+        .insight-card .text-info { color: #60a5fa !important; }
+        
+        .no-data-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 60px 30px;
+            text-align: center;
+        }
+        .no-data-card i { font-size: 4rem; color: var(--primary-subtle); opacity: 0.5; margin-bottom: 20px; }
+        .no-data-card h4 { color: #fff; margin-bottom: 15px; }
+        .no-data-card p { color: rgba(255, 255, 255, 0.6); }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+        
+        .nav-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary-subtle);
+            margin-left: auto;
+            transition: all 0.3s ease;
+        }
+        .sidebar a:hover .nav-indicator {
+            background: var(--accent-subtle);
+            box-shadow: 0 0 10px var(--accent-subtle);
+        }
+        
+        @media (max-width: 992px) {
+            .main-content { margin-left: 0; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-overlay" onclick="closeMobileSidebar()"></div>
+    <button class="mobile-toggle-btn" onclick="toggleMobileSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- Sidebar -->
+    <div class="sidebar pt-4" id="sidebar">
+        <div class="sidebar-top-actions">
+            <div class="sidebar-brand">
+                <h4 class="text-center"><i class="fas fa-cube me-2"></i><span class="sidebar-link-text">Retrix</span></h4>
+            </div>
+            <button class="menu-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <a href="/seller-dashboard" onclick="handleSidebarClick(event, '/seller-dashboard')">
+            <i class="fas fa-home"></i>
+            <span class="sidebar-link-text">Dashboard</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/catalogue" onclick="handleSidebarClick(event, '/catalogue')">
+            <i class="fas fa-book"></i>
+            <span class="sidebar-link-text">Catalogue Analysis</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/sku-analysis" onclick="handleSidebarClick(event, '/sku-analysis')">
+            <i class="fas fa-barcode"></i>
+            <span class="sidebar-link-text">SKU Analysis</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/seller-comparison" class="active" onclick="handleSidebarClick(event, '/seller-comparison')">
+            <i class="fas fa-columns"></i>
+            <span class="sidebar-link-text">Comparison</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="#" onclick="handleSidebarClick(event, '#')">
+            <i class="fas fa-chart-pie"></i>
+            <span class="sidebar-link-text">Profit & Loss</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/seller-settings" onclick="handleSidebarClick(event, '/seller-settings')">
+            <i class="fas fa-cog"></i>
+            <span class="sidebar-link-text">Settings</span>
+            <div class="nav-indicator"></div>
+        </a>
+        
+        <!-- Logout -->
+        <a href="/seller-logout" class="logout-btn-bottom">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="sidebar-link-text">Logout</span>
+        </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header-section">
+            <div class="welcome-text" style="display: flex; align-items: center; gap: 15px;">
+                <div class="current-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: rgba(79, 172, 254, 0.2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #fff; overflow: hidden;">
+                    {% if seller.profile_photo %}
+                    <img src="/profile-photo/{{ seller.id }}" alt="Profile Photo" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                    <i class="fas {{ seller.profile_icon or 'fa-user' }}"></i>
+                    {% endif %}
+                </div>
+                <div>Month Comparison, <span>{{ name }}</span>! 👋</div>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-card">
+            <form action="/seller-comparison" method="GET" class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label">Month 1</label>
+                    <select name="month1" class="form-select" required>
+                        <option value="">Select</option>
+                        <option value="1" {% if month1 == 1 %}selected{% endif %}>January</option>
+                        <option value="2" {% if month1 == 2 %}selected{% endif %}>February</option>
+                        <option value="3" {% if month1 == 3 %}selected{% endif %}>March</option>
+                        <option value="4" {% if month1 == 4 %}selected{% endif %}>April</option>
+                        <option value="5" {% if month1 == 5 %}selected{% endif %}>May</option>
+                        <option value="6" {% if month1 == 6 %}selected{% endif %}>June</option>
+                        <option value="7" {% if month1 == 7 %}selected{% endif %}>July</option>
+                        <option value="8" {% if month1 == 8 %}selected{% endif %}>August</option>
+                        <option value="9" {% if month1 == 9 %}selected{% endif %}>September</option>
+                        <option value="10" {% if month1 == 10 %}selected{% endif %}>October</option>
+                        <option value="11" {% if month1 == 11 %}selected{% endif %}>November</option>
+                        <option value="12" {% if month1 == 12 %}selected{% endif %}>December</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Year 1</label>
+                    <select name="year1" class="form-select" required>
+                        <option value="">Year</option>
+                        {% for year in available_years %}
+                        <option value="{{ year }}" {% if year1 == year %}selected{% endif %}>{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1 text-center">
+                    <label class="form-label">&nbsp;</label>
+                    <i class="fas fa-arrow-right" style="color: rgba(255,255,255,0.5); font-size: 1.5rem;"></i>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Month 2</label>
+                    <select name="month2" class="form-select" required>
+                        <option value="">Select</option>
+                        <option value="1" {% if month2 == 1 %}selected{% endif %}>January</option>
+                        <option value="2" {% if month2 == 2 %}selected{% endif %}>February</option>
+                        <option value="3" {% if month2 == 3 %}selected{% endif %}>March</option>
+                        <option value="4" {% if month2 == 4 %}selected{% endif %}>April</option>
+                        <option value="5" {% if month2 == 5 %}selected{% endif %}>May</option>
+                        <option value="6" {% if month2 == 6 %}selected{% endif %}>June</option>
+                        <option value="7" {% if month2 == 7 %}selected{% endif %}>July</option>
+                        <option value="8" {% if month2 == 8 %}selected{% endif %}>August</option>
+                        <option value="9" {% if month2 == 9 %}selected{% endif %}>September</option>
+                        <option value="10" {% if month2 == 10 %}selected{% endif %}>October</option>
+                        <option value="11" {% if month2 == 11 %}selected{% endif %}>November</option>
+                        <option value="12" {% if month2 == 12 %}selected{% endif %}>December</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Year 2</label>
+                    <select name="year2" class="form-select" required>
+                        <option value="">Year</option>
+                        {% for year in available_years %}
+                        <option value="{{ year }}" {% if year2 == year %}selected{% endif %}>{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn-compare w-100">
+                        <i class="fas fa-exchange-alt me-2"></i>Compare
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {% if not has_data %}
+        <div class="no-data-card">
+            {% if error %}
+            <i class="fas fa-exclamation-triangle"></i>
+            <h4>No Data Available</h4>
+            <p>{{ error }}</p>
+            <a href="/seller-dashboard" class="btn btn-primary mt-3" style="background: linear-gradient(135deg, #4facfe 0%, #8a2be2 100%); border: none; border-radius: 10px; padding: 12px 25px;">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+            {% else %}
+            <i class="fas fa-calendar-alt"></i>
+            <h4>Select Two Months to Compare</h4>
+            <p>Choose two different months above and click "Compare" to see the comparison analysis.</p>
+            {% endif %}
+        </div>
+        {% else %}
+
+        <!-- Revenue Comparison Chart -->
+        <div class="card-custom">
+            <div class="card-body">
+                <h5><i class="fas fa-chart-line me-2" style="color: var(--primary-subtle);"></i>Monthly Revenue Comparison</h5>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Insights Section -->
+        <div class="card-custom">
+            <div class="card-body">
+                <h5><i class="fas fa-lightbulb me-2" style="color: #fbbf24;"></i>Key Business Insights</h5>
+                {% set m1 = comparison_data.month1 %}
+                {% set m2 = comparison_data.month2 %}
+                {% set comp = comparison_data.comparison %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="insight-card">
+                            <h6><i class="fas fa-chart-line me-2"></i>Revenue Trend</h6>
+                            <p>{% if comp.revenue_change >= 0 %}
+                                {{ m2.month_year }} shows a <span class="text-success">+{{ comp.revenue_change_pct }}%</span> growth in revenue compared to {{ m1.month_year }}. 
+                                Revenue increased from ₹{{ "{:,.0f}".format(m1.total_revenue) }} to ₹{{ "{:,.0f}".format(m2.total_revenue) }}.
+                            {% else %}
+                                {{ m2.month_year }} shows a <span class="text-danger">{{ comp.revenue_change_pct }}%</span> decline in revenue compared to {{ m1.month_year }}. 
+                                Revenue decreased from ₹{{ "{:,.0f}".format(m1.total_revenue) }} to ₹{{ "{:,.0f}".format(m2.total_revenue) }}.
+                            {% endif %}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="insight-card">
+                            <h6><i class="fas fa-shopping-cart me-2"></i>Order Volume</h6>
+                            <p>{% if comp.orders_change >= 0 %}
+                                Order volume {% if comp.orders_change > 0 %}increased by {{ comp.orders_change_pct }}%{% else %}remained stable{% endif %}. 
+                                From {{ m1.total_orders }} orders in {{ m1.month_year }} to {{ m2.total_orders }} orders in {{ m2.month_year }}.
+                            {% else %}
+                                Order volume decreased by {{ (comp.orders_change_pct * -1) }}%. 
+                                From {{ m1.total_orders }} orders in {{ m1.month_year }} to {{ m2.total_orders }} orders in {{ m2.month_year }}.
+                            {% endif %}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="insight-card">
+                            <h6><i class="fas fa-tags me-2"></i>Average Order Value</h6>
+                            <p>{% if comp.aov_change >= 0 %}
+                                Average order value {% if comp.aov_change > 0 %}increased by {{ comp.aov_change_pct }}%{% else %}remained stable{% endif %}. 
+                                From ₹{{ "{:,.2f}".format(m1.avg_order_value) }} to ₹{{ "{:,.2f}".format(m2.avg_order_value) }}.
+                            {% else %}
+                                Average order value decreased by {{ (comp.aov_change_pct * -1) }}%. 
+                                From ₹{{ "{:,.2f}".format(m1.avg_order_value) }} to ₹{{ "{:,.2f}".format(m2.avg_order_value) }}.
+                            {% endif %}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="insight-card">
+                            <h6><i class="fas fa-undo me-2"></i>Return Rate Analysis</h6>
+                            <p>{% if comp.return_rate_change < 0 %}
+                                Return rate <span class="text-success">improved</span> by {{ (comp.return_rate_change * -1)|round(2) }}% (from {{ m1.return_rate }}% to {{ m2.return_rate }}%).
+                            {% elif comp.return_rate_change > 0 %}
+                                Return rate <span class="text-danger">increased</span> by {{ comp.return_rate_change|round(2) }}% (from {{ m1.return_rate }}% to {{ m2.return_rate }}%).
+                            {% else %}
+                                Return rate <span class="text-warning">remained stable</span> at {{ m1.return_rate }}%.
+                            {% endif %}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Return Reasons Comparison Bar Chart -->
+        {% if comparison_data.month1.return_reasons or comparison_data.month2.return_reasons %}
+        <div class="card-custom">
+            <div class="card-body">
+                <h5><i class="fas fa-chart-bar me-2" style="color: var(--primary-subtle);"></i>Return Reasons Comparison</h5>
+                <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem; margin-bottom: 20px;">Comparison of return reasons between {{ comparison_data.month1.month_year }} and {{ comparison_data.month2.month_year }}</p>
+                <div class="chart-container" style="height: 350px;">
+                    <canvas id="returnReasonsChart"></canvas>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% endif %}
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
+
+        function handleSidebarClick(event, url) {
+            if (url !== '#') {
+                window.location.href = url;
+            }
+        }
+
+        {% if has_data and (comparison_data.month1.has_data or comparison_data.month2.has_data) %}
+        const month1Label = '{{ comparison_data.month1.month_year }}';
+        const month2Label = '{{ comparison_data.month2.month_year }}';
+        
+        const dailyRevenue1 = {{ comparison_data.month1.daily_revenue | tojson }};
+        const dailyRevenue2 = {{ comparison_data.month2.daily_revenue | tojson }};
+        
+        const labels = Array.from({length: 31}, (_, i) => i + 1);
+        const data1 = labels.map(day => dailyRevenue1[day] !== undefined ? dailyRevenue1[day] : null);
+        const data2 = labels.map(day => dailyRevenue2[day] !== undefined ? dailyRevenue2[day] : null);
+        
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: month1Label,
+                    data: data1,
+                    borderColor: '#4facfe',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    tension: 0,
+                    pointBackgroundColor: '#4facfe',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1,
+                    pointRadius: 3,
+                    spanGaps: true
+                }, {
+                    label: month2Label,
+                    data: data2,
+                    borderColor: '#68d391',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    tension: 0,
+                    pointBackgroundColor: '#68d391',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1,
+                    pointRadius: 3,
+                    spanGaps: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: { color: 'rgba(255,255,255,0.7)', usePointStyle: true, padding: 20 }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ₹' + (context.raw !== null ? context.raw.toLocaleString() : 'No data');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        ticks: { color: 'rgba(255,255,255,0.7)', callback: function(value) { return '₹' + value.toLocaleString(); } }
+                    },
+                    x: {
+                        title: { display: true, text: 'Day of Month', color: 'rgba(255,255,255,0.7)' },
+                        grid: { display: false },
+                        ticks: { color: 'rgba(255,255,255,0.7)', stepSize: 1 }
+                    }
+                },
+                interaction: { mode: 'nearest', axis: 'x', intersect: false }
+            }
+        });
+        
+        const returnReasons1 = {{ comparison_data.month1.return_reasons | tojson }};
+        const returnReasons2 = {{ comparison_data.month2.return_reasons | tojson }};
+        
+        const allReasons = new Set([...Object.keys(returnReasons1), ...Object.keys(returnReasons2)]);
+        const reasonLabels = Array.from(allReasons);
+        const dataMonth1 = reasonLabels.map(reason => returnReasons1[reason] || 0);
+        const dataMonth2 = reasonLabels.map(reason => returnReasons2[reason] || 0);
+        
+        if (reasonLabels.length > 0) {
+            const returnReasonsCtx = document.getElementById('returnReasonsChart').getContext('2d');
+            new Chart(returnReasonsCtx, {
+                type: 'bar',
+                data: {
+                    labels: reasonLabels,
+                    datasets: [{
+                        label: month1Label,
+                        data: dataMonth1,
+                        backgroundColor: 'rgba(79, 172, 254, 0.7)',
+                        borderColor: '#4facfe',
+                        borderWidth: 1
+                    }, {
+                        label: month2Label,
+                        data: dataMonth2,
+                        backgroundColor: 'rgba(104, 211, 145, 0.7)',
+                        borderColor: '#68d391',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: { color: 'rgba(255,255,255,0.7)', usePointStyle: true, padding: 20 }
+                        },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: 'rgba(255,255,255,0.7)', stepSize: 1 },
+                            title: { display: true, text: 'Number of Returns', color: 'rgba(255,255,255,0.7)' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'rgba(255,255,255,0.7)', maxRotation: 45, minRotation: 0 },
+                            title: { display: true, text: 'Return Reason', color: 'rgba(255,255,255,0.7)' }
+                        }
+                    }
+                }
+            });
+        }
+        {% endif %}
+    </script>
+    <style>
+        /* Mobile Responsive Styles */
+        @media (max-width: 991px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 260px;
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0 !important;
+                padding: 15px;
+            }
+            .mobile-toggle-btn {
+                display: flex !important;
+            }
+            .mobile-overlay {
+                display: block !important;
+            }
+            .insight-card {
+                margin-bottom: 15px;
+            }
+            .card-custom {
+                margin-bottom: 15px;
+            }
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 300px !important;
+            }
+            .stats-card {
+                padding: 15px;
+            }
+            .form-label {
+                font-size: 0.85rem;
+            }
+            .form-select {
+                font-size: 0.9rem;
+            }
+        }
+        @media (max-width: 576px) {
+            .chart-container {
+                height: 250px !important;
+            }
+            .btn-compare {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+        }
+        .mobile-toggle-btn {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 101;
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #4facfe 0%, #8a2be2 100%);
+            border: none;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+        .mobile-toggle-btn i {
+            color: white;
+            font-size: 1.2rem;
+        }
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+        }
+    </style>
+    <script>
+        // Toggle mobile sidebar
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        }
+        
+        // Close sidebar when clicking overlay
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.remove('show');
+        }
+    </script>
+</body>
+</html>

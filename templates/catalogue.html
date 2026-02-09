@@ -1,0 +1,2126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retrix - Catalogue Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-subtle: #4facfe;
+            --secondary-subtle: #8a2be2;
+            --accent-subtle: #9400d3;
+            --card-bg: rgba(138, 43, 226, 0.15);
+            --card-border: rgba(138, 43, 226, 0.3);
+        }
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 25%, #2d1b4e 50%, #1a1a4e 75%, #0d0d2b 100%);
+            min-height: 100vh;
+        }
+        .sidebar {
+            min-height: 100vh;
+            width: 260px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 100;
+            background: linear-gradient(180deg, #1a1a3e 0%, #2d1b4e 100%);
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar.collapsed { width: 70px; }
+        .sidebar.collapsed .sidebar-brand h4,
+        .sidebar.collapsed .sidebar-link-text,
+        .sidebar.collapsed .nav-indicator {
+            display: none;
+        }
+        .sidebar.collapsed .sidebar-brand {
+            padding: 20px 10px;
+        }
+        .sidebar.collapsed .menu-toggle {
+            right: 50%;
+            transform: translateX(50%);
+        }
+        .sidebar.collapsed a:not(.logout-btn-bottom) {
+            justify-content: center;
+            padding: 14px;
+            margin: 4px 10px;
+        }
+        .sidebar.collapsed a:not(.logout-btn-bottom) i {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        .sidebar.collapsed ~ .main-content {
+            margin-left: 70px;
+        }
+        .sidebar-top-actions {
+            display: flex;
+            align-items: center;
+            padding: 20px 20px 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+        .sidebar-brand { padding: 0; }
+        .sidebar-brand h4 {
+            color: #fff;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+        .menu-toggle {
+            position: absolute;
+            right: 10px;
+            top: 18px;
+            z-index: 200;
+            background: rgba(79, 172, 254, 0.3);
+            border: none;
+            color: #fff;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .menu-toggle:hover { background: rgba(79, 172, 254, 0.5); }
+        .sidebar a {
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 3px solid transparent;
+            margin: 4px 10px;
+            border-radius: 8px;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: linear-gradient(90deg, rgba(79, 172, 254, 0.2) 0%, transparent 100%);
+            color: #fff;
+            border-left-color: var(--accent-subtle);
+            transform: translateX(5px);
+        }
+        .sidebar a i { width: 24px; text-align: center; }
+        
+        /* History Section in Sidebar */
+        .sidebar-section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 15px 20px 8px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .sidebar-section-title:hover {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .sidebar-section-title .toggle-icon {
+            font-size: 0.7rem;
+            transition: transform 0.3s ease;
+        }
+        .sidebar-section-title.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 0 10px;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+        }
+        .history-list.collapsed {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .history-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .history-item:hover {
+            background: rgba(79, 172, 254, 0.15);
+        }
+        .history-item.active {
+            background: rgba(79, 172, 254, 0.25);
+            border-left: 3px solid var(--primary-subtle);
+        }
+        .history-item i {
+            color: #4facfe;
+            font-size: 0.9rem;
+            margin-right: 10px;
+        }
+        .history-item .info {
+            flex: 1;
+            overflow: hidden;
+        }
+        .history-item .name {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .history-item .date {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.7rem;
+        }
+        .history-item .action {
+            color: rgba(255, 255, 255, 0.4);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .history-item:hover .action {
+            opacity: 1;
+        }
+        
+        .logout-btn-bottom {
+            margin-top: auto;
+            background: rgba(245, 101, 101, 0.2);
+            border: 1px solid rgba(245, 101, 101, 0.3);
+            color: #fc8181;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 10px;
+        }
+        .main-content {
+            margin-left: 260px;
+            padding: 30px;
+            transition: margin-left 0.3s ease;
+        }
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .welcome-text { color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; }
+        .welcome-text span { color: #fff; font-weight: 500; }
+        .section-title { color: #fff; font-size: 1.5rem; font-weight: 600; margin-bottom: 25px; }
+        .section-subtitle { color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; margin-bottom: 20px; }
+        
+        /* Category Cards */
+        .category-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .cat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 25px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .cat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-subtle), var(--accent-subtle));
+        }
+        .cat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(138, 43, 226, 0.3);
+            border-color: var(--primary-subtle);
+        }
+        .cat-card.selected {
+            border-color: var(--primary-subtle);
+            box-shadow: 0 0 30px rgba(79, 172, 254, 0.3);
+        }
+        .cat-card.high-risk::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+        .cat-card.top-performer::before { background: linear-gradient(90deg, #22c55e, #68d391); }
+        .cat-card i {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, var(--primary-subtle), var(--accent-subtle));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .cat-card.high-risk i { background: linear-gradient(135deg, #ef4444, #f87171); -webkit-text-fill-color: transparent; }
+        .cat-card.top-performer i { background: linear-gradient(135deg, #22c55e, #68d391); -webkit-text-fill-color: transparent; }
+        .cat-card h5 {
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .cat-card .value { font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 5px; }
+        .cat-card .sub-value { font-size: 0.8rem; color: rgba(255, 255, 255, 0.6); }
+        
+        /* Charts */
+        .chart-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 25px;
+            height: 100%;
+        }
+        .chart-card h5 {
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        .chart-container { height: 300px; position: relative; }
+        .chart-container-sm { height: 250px; position: relative; }
+        
+        /* Chart Insight */
+        .chart-insight {
+            background: rgba(79, 172, 254, 0.1);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .chart-insight h6 {
+            color: var(--primary-subtle);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .chart-insight p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.85rem;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        /* Analysis Cards */
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .analysis-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 25px;
+        }
+        .analysis-card h5 {
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .metric-row:last-child { border-bottom: none; }
+        .metric-label { color: rgba(255, 255, 255, 0.7); font-size: 0.9rem; }
+        .metric-value { color: #fff; font-size: 1.1rem; font-weight: 600; }
+        .metric-value.positive { color: #68d391; }
+        .metric-value.negative { color: #f87171; }
+        .metric-value.warning { color: #fbbf24; }
+        
+        /* Insights */
+        .insight-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid;
+        }
+        .insight-item.danger { background: rgba(239, 68, 68, 0.1); border-left-color: #ef4444; }
+        .insight-item.warning { background: rgba(251, 191, 36, 0.1); border-left-color: #fbbf24; }
+        .insight-item.success { background: rgba(34, 197, 94, 0.1); border-left-color: #22c55e; }
+        .insight-item.info { background: rgba(59, 130, 246, 0.1); border-left-color: #3b82f6; }
+        .insight-item i { margin-top: 3px; }
+        .insight-item p { margin: 0; font-size: 0.9rem; color: rgba(255, 255, 255, 0.85); }
+        
+        /* Search Section */
+        .search-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .search-section h5 { color: #fff; font-size: 1.1rem; font-weight: 500; margin-bottom: 20px; }
+        .search-input-group { position: relative; }
+        .search-input-group input {
+            background: rgba(138, 43, 226, 0.1);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 12px;
+            padding: 14px 20px 14px 50px;
+            color: #fff;
+            width: 100%;
+            font-size: 1rem;
+        }
+        .search-input-group input::placeholder { color: rgba(255, 255, 255, 0.5); }
+        .search-input-group input:focus {
+            outline: none;
+            border-color: var(--primary-subtle);
+            box-shadow: 0 0 20px rgba(79, 172, 254, 0.2);
+        }
+        .search-input-group i {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .search-results { margin-top: 20px; max-height: 400px; overflow-y: auto; }
+        .search-result-item {
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .search-result-item:hover {
+            background: rgba(79, 172, 254, 0.2);
+            transform: translateX(5px);
+        }
+        .search-result-item h6 { color: #fff; margin-bottom: 10px; }
+        
+        /* Category Dropdown */
+        .category-select {
+            background: rgba(138, 43, 226, 0.1);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 12px;
+            padding: 14px 20px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+        }
+        .category-select:focus { outline: none; border-color: var(--primary-subtle); }
+        .category-select option { background: #1a1a3e; color: #fff; }
+        
+        /* No Data */
+        .no-data {
+            text-align: center;
+            padding: 80px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .no-data i { font-size: 4rem; margin-bottom: 20px; opacity: 0.3; }
+        .no-data h5 { color: rgba(255, 255, 255, 0.7); margin-bottom: 10px; }
+        
+        /* History Table */
+        .history-table {
+            width: 100%;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .history-table th, .history-table td {
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .history-table th {
+            color: var(--primary-subtle);
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .history-table tr:hover { background: rgba(79, 172, 254, 0.1); }
+        .history-table td { font-size: 0.9rem; }
+        
+        /* Progress Bar */
+        .progress-custom {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-custom .progress-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        /* Tab Navigation */
+        .nav-tabs {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-tabs .nav-link {
+            color: rgba(255, 255, 255, 0.6);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px 8px 0 0;
+        }
+        .nav-tabs .nav-link:hover {
+            color: #fff;
+            border: none;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .nav-tabs .nav-link.active {
+            color: #fff;
+            background: var(--card-bg);
+            border: none;
+            border-bottom: 2px solid var(--primary-subtle);
+        }
+        .tab-content { padding: 20px 0; }
+        
+        /* KPI Cards */
+        .kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .kpi-card h3 { color: #fff; font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; }
+        .kpi-card p { color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; margin: 0; }
+        .kpi-card .trend {
+            font-size: 0.8rem;
+            margin-top: 8px;
+        }
+        .kpi-card .trend.up { color: #68d391; }
+        .kpi-card .trend.down { color: #f87171; }
+        
+        /* ABC Classification */
+        .abc-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .abc-a { background: rgba(34, 197, 94, 0.2); color: #68d391; }
+        .abc-b { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .abc-c { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        
+        /* Selected Category Section */
+        .selected-category-section {
+            background: var(--card-bg);
+            border: 2px solid var(--primary-subtle);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .selected-category-section h5 {
+            color: var(--primary-subtle);
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        /* Upload Button */
+        .upload-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #8a2be2 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 25px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.5);
+            background: linear-gradient(135deg, #8a2be2 0%, #4facfe 100%);
+        }
+        .upload-btn i {
+            font-size: 1.1rem;
+        }
+        
+        /* Selected File Badge */
+        .selected-file-badge {
+            background: rgba(79, 172, 254, 0.2);
+            border: 1px solid rgba(79, 172, 254, 0.4);
+            border-radius: 10px;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .selected-file-badge i { color: #4facfe; }
+        .selected-file-badge .file-info { flex: 1; }
+        .selected-file-badge .file-name { color: #fff; font-weight: 500; font-size: 0.9rem; }
+        .selected-file-badge .file-meta { color: rgba(255, 255, 255, 0.5); font-size: 0.75rem; }
+        
+        /* CSV Navigation */
+        .csv-nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .csv-nav-btn {
+            background: rgba(79, 172, 254, 0.15);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            color: rgba(255, 255, 255, 0.7);
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .csv-nav-btn:hover:not(:disabled) {
+            background: rgba(79, 172, 254, 0.25);
+            color: #fff;
+        }
+        .csv-nav-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .csv-file-indicator {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+            padding: 0 10px;
+        }
+        .csv-file-name {
+            color: var(--primary-subtle);
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Upload history table row selected state */
+        .history-row-selected {
+            background: rgba(34, 197, 94, 0.2);
+        }
+        
+        /* History Section */
+        .history-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 15px 20px;
+        }
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        .history-header h5 {
+            margin: 0;
+        }
+        .history-header:hover h5 {
+            color: #fff;
+        }
+        .toggle-icon {
+            transition: transform 0.3s ease;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .history-content {
+            animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(138, 43, 226, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4facfe, #8a2be2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #8a2be2, #4facfe);
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content { margin-left: 0; padding: 20px; }
+            .category-cards { grid-template-columns: repeat(2, 1fr); }
+            .mobile-toggle {
+                display: flex !important;
+            }
+        }
+        @media (max-width: 576px) {
+            .category-cards { grid-template-columns: 1fr; }
+        }
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-subtle), var(--secondary-subtle));
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Toggle Button -->
+    <button class="mobile-toggle" onclick="toggleMobileSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    <!-- Sidebar -->
+    <div class="sidebar pt-4" id="sidebar">
+        <div class="sidebar-top-actions">
+            <div class="sidebar-brand">
+                <h4 class="text-center"><i class="fas fa-cube me-2"></i><span class="sidebar-link-text">Retrix</span></h4>
+            </div>
+            <button class="menu-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <a href="/seller-dashboard" onclick="handleSidebarClick(event, '/seller-dashboard')">
+            <i class="fas fa-home"></i>
+            <span class="sidebar-link-text">Dashboard</span>
+        </a>
+        <a href="/catalogue" class="active" onclick="handleSidebarClick(event, '/catalogue')">
+            <i class="fas fa-book"></i>
+            <span class="sidebar-link-text">Catalogue Analysis</span>
+        </a>
+        <a href="/sku-analysis" onclick="handleSidebarClick(event, '/sku-analysis')">
+            <i class="fas fa-barcode"></i>
+            <span class="sidebar-link-text">SKU Analysis</span>
+        </a>
+        <a href="/seller-comparison" onclick="handleSidebarClick(event, '/seller-comparison')">
+            <i class="fas fa-columns"></i>
+            <span class="sidebar-link-text">Comparison</span>
+        </a>
+        <a href="#">
+            <i class="fas fa-chart-pie"></i>
+            <span class="sidebar-link-text">Profit & Loss</span>
+        </a>
+        <a href="/seller-settings" onclick="handleSidebarClick(event, '/seller-settings')">
+            <i class="fas fa-cog"></i>
+            <span class="sidebar-link-text">Settings</span>
+        </a>
+        
+        <a href="/seller-logout" class="logout-btn-bottom">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="sidebar-link-text">Logout</span>
+        </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header-section">
+            <div class="welcome-text" style="display: flex; align-items: center; gap: 15px;">
+                <div class="current-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: rgba(79, 172, 254, 0.2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #fff; overflow: hidden;">
+                    {% if seller.profile_photo %}
+                    <img src="/profile-photo/{{ seller.id }}" alt="Profile Photo" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                    <i class="fas {{ seller.profile_icon or 'fa-user' }}"></i>
+                    {% endif %}
+                </div>
+                <div>Catalogue</div>
+            </div>
+        </div>
+
+        <!-- Catalogue Analysis Title -->
+        <h4 class="section-title"><i class="fas fa-book me-2"></i>Catalogue Analysis</h4>
+
+        <!-- Collapsible Upload History Section -->
+        <div class="history-section mb-4">
+            <div class="history-header" onclick="toggleHistoryDropdown()" style="cursor: pointer;">
+                <h5 style="color: #fff; margin: 0; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-history"></i>
+                    Upload History
+                    <i class="fas fa-chevron-down toggle-icon" id="historyToggleIcon"></i>
+                </h5>
+            </div>
+            <div class="history-dropdown" id="historyDropdown" style="display: none;">
+                <div class="history-content" style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; margin-top: 15px;">
+                    {% if uploads %}
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="color: #fff;">File Name</th>
+                                    <th style="color: #fff;">Upload Date</th>
+                                    <th style="color: #fff;">Rows</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for upload in uploads %}
+                                <tr onclick="selectCSV('{{ upload.id }}')" style="cursor: pointer;{% if selected_upload and selected_upload.id == upload.id %} background: rgba(34, 197, 94, 0.2);{% endif %}">
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <i class="fas fa-file-csv" style="color: #4facfe;"></i>
+                                            <span style="color: #fff;">{{ upload.original_name }}</span>
+                                            {% if selected_upload and selected_upload.id == upload.id %}
+                                            <span style="color: #22c55e;"><i class="fas fa-check-circle"></i></span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td style="color: #fff;">{{ upload.upload_date[:10] }}</td>
+                                    <td style="color: #fff;">{{ upload.row_count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.5);">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.3;"></i>
+                        <p style="margin: 0; color: rgba(255,255,255,0.5);">No files uploaded yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if selected_upload and data and data.categories %}
+       
+        
+
+        <!-- Category Cards (Quick Overview) -->
+        <h5 class="section-subtitle">Quick Overview</h5>
+        <div class="category-cards">
+            {% set top_cat = data.top_categories[0] if data.top_categories else none %}
+            {% set high_risk = data.categories|selectattr('return_rate', '>', 15)|first if data.categories else none %}
+            {% set max_rev = (data.categories|max(attribute='revenue')) if data.categories else none %}
+            {% set min_rev = (data.categories|min(attribute='revenue')) if data.categories else none %}
+            {% set best_margin = (data.categories|max(attribute='profit_margin')) if data.categories else none %}
+            
+            <div class="cat-card top-performer" onclick="selectCategory('{{ top_cat.name|escape }}')" data-category="{{ top_cat.name|escape }}">
+                <i class="fas fa-trophy"></i>
+                <h5>Top Category</h5>
+                <div class="value">{{ top_cat.name if top_cat else 'N/A' }}</div>
+                <div class="sub-value">${{ "{:,.0f}".format(top_cat.revenue) if top_cat else 0 }} Revenue</div>
+            </div>
+            
+            <div class="cat-card high-risk" onclick="selectCategory('{{ high_risk.name|escape }}')" data-category="{{ high_risk.name|escape }}">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h5>High Risk</h5>
+                <div class="value">{{ high_risk.name if high_risk else 'None' }}</div>
+                <div class="sub-value">{{ high_risk.return_rate if high_risk else 0 }}% Return Rate</div>
+            </div>
+            
+            <div class="cat-card" onclick="selectCategory('{{ max_rev.name|escape }}')" data-category="{{ max_rev.name|escape }}">
+                <i class="fas fa-dollar-sign"></i>
+                <h5>Max Revenue</h5>
+                <div class="value">{{ max_rev.name if max_rev else 'N/A' }}</div>
+                <div class="sub-value">${{ "{:,.0f}".format(max_rev.revenue) if max_rev else 0 }}</div>
+            </div>
+            
+            <div class="cat-card" onclick="selectCategory('{{ min_rev.name|escape }}')" data-category="{{ min_rev.name|escape }}">
+                <i class="fas fa-arrow-down"></i>
+                <h5>Min Revenue</h5>
+                <div class="value">{{ min_rev.name if min_rev else 'N/A' }}</div>
+                <div class="sub-value">${{ "{:,.0f}".format(min_rev.revenue) if min_rev else 0 }}</div>
+            </div>
+            
+            <div class="cat-card top-performer" onclick="selectCategory('{{ best_margin.name|escape }}')" data-category="{{ best_margin.name|escape }}">
+                <i class="fas fa-percent"></i>
+                <h5>Best Margin</h5>
+                <div class="value">{{ best_margin.name if best_margin else 'N/A' }}</div>
+                <div class="sub-value">{{ best_margin.profit_margin if best_margin else 0 }}% Margin</div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs mb-4" id="analysisTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic" type="button">
+                    <i class="fas fa-chart-bar me-2"></i>Basic Analysis
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="comparison-tab" data-bs-toggle="tab" data-bs-target="#comparison" type="button">
+                    <i class="fas fa-exchange-alt me-2"></i>Comparison
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="distribution-tab" data-bs-toggle="tab" data-bs-target="#distribution" type="button">
+                    <i class="fas fa-chart-area me-2"></i>Distribution
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="share-tab" data-bs-toggle="tab" data-bs-target="#share" type="button">
+                    <i class="fas fa-chart-pie me-2"></i>Share & Pareto
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="trends-tab" data-bs-toggle="tab" data-bs-target="#trends" type="button">
+                    <i class="fas fa-chart-line me-2"></i>Trends Over Time
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="advanced-tab" data-bs-toggle="tab" data-bs-target="#advanced" type="button">
+                    <i class="fas fa-rocket me-2"></i>Advanced Insights
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="analysisTabsContent">
+            <!-- Basic Analysis Tab -->
+            <div class="tab-pane fade show active" id="basic" role="tabpanel">
+                <!-- KPI Cards -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="kpi-card">
+                            <h3 id="kpiOrders">0</h3>
+                            <p>Total Orders</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="kpi-card">
+                            <h3 id="kpiRevenue">$0</h3>
+                            <p>Total Revenue</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="kpi-card">
+                            <h3 id="kpiReturns">0</h3>
+                            <p>Total Returns</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="kpi-card">
+                            <h3 id="kpiProfit">$0</h3>
+                            <p>Net Profit</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Basic Charts -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-shopping-cart me-2"></i>Orders by Category</h5>
+                            <div class="chart-container"><canvas id="ordersBarChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>This bar chart displays the total number of orders for each category. Use it to identify which categories are most popular among customers and which may need more marketing focus.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-dollar-sign me-2"></i>Revenue by Category</h5>
+                            <div class="chart-container"><canvas id="revenueBarChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>This chart shows total revenue generated by each category. Higher bars indicate more profitable categories. Compare this with orders to see which categories have higher average order values.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-calculator me-2"></i>Average Order Value by Category</h5>
+                            <div class="chart-container"><canvas id="avgOrderChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>The average amount customers spend per order in each category. Higher AOV suggests customers are buying more expensive items or in larger quantities. Use this to optimize pricing strategies.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-undo me-2"></i>Return Rate by Category</h5>
+                            <div class="chart-container"><canvas id="returnRateChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Percentage of orders that were returned for each category. Red bars indicate high-risk categories (>15%) requiring immediate attention. Focus on reducing returns in these areas.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Tab -->
+            <div class="tab-pane fade" id="comparison" role="tabpanel">
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-exchange-alt me-2"></i>Revenue vs Profit by Category</h5>
+                            <div class="chart-container"><canvas id="revenueProfitChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Compare revenue (blue) and profit (green) side by side for each category. Large gaps indicate high costs or returns. Categories where profit is significantly lower than revenue need cost optimization.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-money-bill-wave me-2"></i>Sales vs Returns by Category</h5>
+                            <div class="chart-container"><canvas id="salesReturnsChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Compare total orders (blue) against returns (red) for each category. If returns are close to orders, there's a serious issue. Ideally, returns should be a small fraction of total sales.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-compress-arrows-alt me-2"></i>Order Value vs Return Cost</h5>
+                            <div class="chart-container"><canvas id="orderReturnChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Scatter plot showing relationship between average order value and return costs. Points in the top-right are expensive to handle. Use this to identify categories where returns are costly relative to order value.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-percentage me-2"></i>Profit Margin vs Return Rate</h5>
+                            <div class="chart-container"><canvas id="marginReturnChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Scatter plot of profit margin (x-axis) vs return rate (y-axis). Categories in the bottom-right are ideal: high margins with low returns. Top-left categories need urgent attention.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribution Tab -->
+            <div class="tab-pane fade" id="distribution" role="tabpanel">
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-box me-2"></i>Orders Distribution</h5>
+                            <div class="chart-container"><canvas id="ordersDistChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Shows how orders are distributed across categories. Tall bars indicate dominant categories. This helps identify if sales are concentrated in few categories or spread evenly.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-coins me-2"></i>Revenue Distribution</h5>
+                            <div class="chart-container"><canvas id="revenueDistChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Revenue spread across categories. Compare with orders distribution to see which categories generate more revenue per order. A category with low orders but high revenue has high AOV.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="analysis-card">
+                    <h5><i class="fas fa-exclamation-circle me-2" style="color: #fbbf24;"></i>Outlier Detection</h5>
+                    <div id="outlierInfo">
+                        <p style="color: rgba(255,255,255,0.6);">Select a category to see outlier analysis</p>
+                    </div>
+                    <div class="chart-insight mt-3">
+                        <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                        <p>Identifies categories with unusual order patterns using Z-score analysis. Categories with |Z-score| > 1.5 are potential outliers. These could be either exceptional performers or underperformers needing investigation.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Share & Pareto Tab -->
+            <div class="tab-pane fade" id="share" role="tabpanel">
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-4">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-chart-pie me-2"></i>Revenue Share</h5>
+                            <div class="chart-container"><canvas id="revenueShareChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Shows what percentage of total revenue each category contributes. Larger slices = more important categories. Use this to prioritize resources on revenue-driving categories.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-chart-pie me-2"></i>Orders Share</h5>
+                            <div class="chart-container"><canvas id="ordersShareChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Distribution of total orders across categories. Useful to see which categories are most frequently purchased, regardless of revenue. High order share but low revenue share = low AOV.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-chart-pie me-2"></i>Returns Share</h5>
+                            <div class="chart-container"><canvas id="returnsShareChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Which categories contribute most to total returns. Large slices indicate problem areas. Focus return reduction efforts on these categories first for maximum impact.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-chart-line me-2"></i>Pareto Analysis (80/20 Rule)</h5>
+                            <div class="chart-container"><canvas id="paretoChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Identifies the vital few categories that generate most revenue. The line shows cumulative percentage. Typically, 20% of categories generate 80% of revenue. Focus on these top performers for maximum ROI.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="analysis-card">
+                            <h5><i class="fas fa-percentage me-2" style="color: var(--primary-subtle);"></i>Pareto Insights</h5>
+                            <div id="paretoInfo">
+                                <p style="color: rgba(255,255,255,0.6);">Pareto insights will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trends Tab -->
+            <div class="tab-pane fade" id="trends" role="tabpanel">
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-chart-line me-2"></i>Revenue Trend Over Time</h5>
+                            <div class="chart-container"><canvas id="revenueTrendChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Track how total revenue changes over time. Upward trends indicate growth; downward trends need investigation. Use this to identify seasonal patterns and measure marketing campaign effectiveness.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-chart-line me-2"></i>Orders Trend Over Time</h5>
+                            <div class="chart-container"><canvas id="ordersTrendChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Track order volume over time. Comparing with revenue trend helps identify changes in order value. A rising orders trend with flat revenue suggests decreasing AOV.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-chart-area me-2"></i>Revenue by Category Over Time</h5>
+                            <div class="chart-container"><canvas id="stackedAreaChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Stacked area chart showing how each category's revenue contributes to total over time. Use this to see category trends and identify which categories are growing or declining relative to others.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-slope me-2"></i>Growth Rate by Category</h5>
+                            <div class="chart-container"><canvas id="growthRateChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Positive bars (green) show growth, negative bars (red) show decline. Use this to identify fastest-growing categories to invest in, and declining categories that may need revitalization or phase-out.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Insights Tab -->
+            <div class="tab-pane fade" id="advanced" role="tabpanel">
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="kpi-card">
+                            <h3 id="abcA">0</h3>
+                            <p>High-Value Categories</p>
+                            <small style="color: rgba(255,255,255,0.5);">(A-Class - 80% Revenue)</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="kpi-card">
+                            <h3 id="abcB">0</h3>
+                            <p>Medium-Value Categories</p>
+                            <small style="color: rgba(255,255,255,0.5);">(B-Class - 15% Revenue)</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="kpi-card">
+                            <h3 id="abcC">0</h3>
+                            <p>Low-Value Categories</p>
+                            <small style="color: rgba(255,255,255,0.5);">(C-Class - 5% Revenue)</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="kpi-card">
+                            <h3 id="avgMargin">0%</h3>
+                            <p>Avg Profit Margin</p>
+                            <small style="color: rgba(255,255,255,0.5);">Across all categories</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-star me-2"></i>Multi-KPI Performance View</h5>
+                            <div class="chart-container"><canvas id="kpiRadarChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Radar chart comparing multiple KPIs across top categories: Revenue, Orders, Profit Margin, Low Returns, and Overall Performance. Larger web area = better all-round performance. Use for quick category comparison.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-trophy me-2"></i>Performance Score Ranking</h5>
+                            <div class="chart-container"><canvas id="performanceRankingChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Categories ranked by overall performance score (0-100). Higher bars = better performance. Use this to identify top performers to replicate success and lowest performers needing improvement.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-bullseye me-2"></i>Sales vs Profit Efficiency</h5>
+                            <div class="chart-container"><canvas id="salesProfitScatter"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Scatter plot of Revenue vs Profit for each category. Categories in top-right are high performers. Bottom-right = high sales but low profit (efficiency issue). Use to optimize resource allocation.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-chart-bar me-2"></i>Actual vs Target Performance</h5>
+                            <div class="chart-container"><canvas id="varianceChart"></canvas></div>
+                            <div class="chart-insight">
+                                <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                                <p>Compare actual performance (blue) against targets (green). Gaps indicate underperformance. Use this for performance tracking and to set realistic targets based on historical data.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="analysis-card mb-4">
+                    <h5><i class="fas fa-table me-2" style="color: var(--primary-subtle);"></i>ABC Classification Table</h5>
+                    <div class="chart-insight mb-3">
+                        <h6><i class="fas fa-info-circle"></i> What is ABC Classification?</h6>
+                        <p>A = Top categories generating 80% revenue (focus here), B = Medium importance (15% revenue), C = Low importance (5% revenue). Based on Pareto principle. Use this to prioritize inventory and marketing investments.</p>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="history-table" id="abcTable">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Revenue</th>
+                                    <th>% Share</th>
+                                    <th>Cumulative %</th>
+                                    <th>Class</th>
+                                    <th>Performance</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Search & Filter Section (Before Deep Analysis) -->
+        <h5 class="section-subtitle mt-4">Search & Filter Categories</h5>
+        <div class="search-section">
+            <h5><i class="fas fa-search me-2"></i>Search Category</h5>
+            <div class="search-input-group">
+                <i class="fas fa-search"></i>
+                <input type="text" id="categorySearch" placeholder="Type to search any category..." onkeyup="searchCategories()">
+            </div>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+
+        <div class="search-section">
+            <h5><i class="fas fa-filter me-2"></i>Select Category for Deep Analysis</h5>
+            <select class="category-select" id="categorySelect" onchange="selectCategory(this.value)">
+                <option value="">Choose a category...</option>
+                {% for cat in data.categories %}
+                <option value="{{ cat.name }}">{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Selected Category Deep Analysis Section -->
+        <div class="selected-category-section" id="selectedCategorySection" style="display: none;">
+            <h5><i class="fas fa-chart-line me-2"></i>Deep Analysis: <span id="selectedCatName"></span></h5>
+            
+            <div class="row g-4 mb-4">
+                <div class="col-lg-4">
+                    <div class="chart-card">
+                        <h5><i class="fas fa-shopping-cart me-2"></i>Orders Breakdown</h5>
+                        <div class="chart-container-sm"><canvas id="selectedOrdersChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="chart-card">
+                        <h5><i class="fas fa-dollar-sign me-2"></i>Revenue Breakdown</h5>
+                        <div class="chart-container-sm"><canvas id="selectedRevenueChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="chart-card">
+                        <h5><i class="fas fa-undo me-2"></i>Return Analysis</h5>
+                        <div class="chart-container-sm"><canvas id="selectedReturnChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="chart-card">
+                        <h5><i class="fas fa-chart-pie me-2"></i>Return Reasons Distribution</h5>
+                        <div class="chart-container-sm"><canvas id="selectedReturnReasonsChart"></canvas></div>
+                        <div class="chart-insight">
+                            <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                            <p>Breakdown of why customers return products in this category. Use this to identify the root cause of returns and take targeted actions (e.g., better sizing guides if "Wrong Size" is high).</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="chart-card">
+                        <h5><i class="fas fa-chart-line me-2"></i>Performance Trend</h5>
+                        <div class="chart-container-sm"><canvas id="selectedTrendChart"></canvas></div>
+                        <div class="chart-insight">
+                            <h6><i class="fas fa-lightbulb"></i> What does this show?</h6>
+                            <p>Track how this category's key metrics (orders, revenue, returns) change over time. Use this to spot trends early - whether the category is growing, stable, or declining.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Selected Category Insights -->
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="analysis-card">
+                        <h5><i class="fas fa-chart-line me-2" style="color: var(--primary-subtle);"></i>Performance Metrics</h5>
+                        <div class="metric-row"><span class="metric-label">Total Orders</span><span class="metric-value" id="selOrders">-</span></div>
+                        <div class="metric-row"><span class="metric-label">Total Revenue</span><span class="metric-value" id="selRevenue">-</span></div>
+                        <div class="metric-row"><span class="metric-label">Avg Order Value</span><span class="metric-value" id="selAOV">-</span></div>
+                        <div class="metric-row"><span class="metric-label">Performance Score</span><span class="metric-value" id="selScore">-</span></div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="analysis-card">
+                        <h5><i class="fas fa-undo me-2" style="color: #ef4444;"></i>Return Metrics</h5>
+                        <div class="metric-row"><span class="metric-label">Total Returns</span><span class="metric-value" id="selReturns">-</span></div>
+                        <div class="metric-row"><span class="metric-label">Return Rate</span><span class="metric-value" id="selReturnRate">-</span></div>
+                        <div class="metric-row"><span class="metric-label">Return Cost</span><span class="metric-value" id="selReturnCost">-</span></div>
+                        <div class="metric-row"><span class="metric-label">Net Profit</span><span class="metric-value" id="selProfit">-</span></div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="analysis-card">
+                        <h5><i class="fas fa-robot me-2" style="color: #8b5cf6;"></i>AI Insights</h5>
+                        <div id="selectedInsights"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- General Depth Analysis -->
+        <h5 class="section-subtitle mt-4">General Depth Analysis</h5>
+        <div class="analysis-grid">
+            <div class="analysis-card">
+                <h5><i class="fas fa-list me-2" style="color: var(--primary-subtle);"></i>All Categories Overview</h5>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Revenue</th>
+                                <th>Orders</th>
+                                <th>Returns</th>
+                                <th>Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in data.categories %}
+                            <tr onclick="selectCategory('{{ cat.name|escape }}')" style="cursor: pointer;">
+                                <td>{{ cat.name }}</td>
+                                <td>${{ "{:,.0f}".format(cat.revenue) }}</td>
+                                <td>{{ cat.orders }}</td>
+                                <td class="{{ 'text-danger' if cat.return_rate > 15 else '' }}">{{ cat.returns }}</td>
+                                <td>
+                                    <span class="badge {{ 'bg-danger' if cat.return_rate > 15 else 'bg-warning' if cat.return_rate > 10 else 'bg-success' }}" style="padding: 4px 8px;">
+                                        {{ cat.return_rate }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="analysis-card">
+                <h5><i class="fas fa-lightbulb me-2" style="color: #fbbf24;"></i>Recommendations</h5>
+                {% for rec in data.insights.recommendations %}
+                <div class="insight-item info">
+                    <i class="fas fa-lightbulb text-info"></i>
+                    <p>{{ rec }}</p>
+                </div>
+                {% endfor %}
+                {% if data.insights.actions %}
+                <h5 class="mt-4" style="color: #fff; font-size: 1.1rem; font-weight: 500;"><i class="fas fa-tasks me-2" style="color: var(--primary-subtle);"></i>Action Items</h5>
+                {% endif %}
+                {% for action in data.insights.actions %}
+                <div class="insight-item info">
+                    <i class="fas fa-check-circle text-info"></i>
+                    <p><strong>{{ action.title }}:</strong> {{ action.description }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state" style="text-align: center; padding: 80px 20px; color: rgba(255,255,255,0.5);">
+            <i class="fas fa-cloud-upload-alt" style="font-size: 5rem; margin-bottom: 25px; opacity: 0.3;"></i>
+            <h4 style="color: rgba(255,255,255,0.7); margin-bottom: 15px; font-size: 1.5rem;">No Data Available</h4>
+            <p style="font-size: 1.1rem; margin-bottom: 30px;">Upload a CSV file to view catalogue analysis</p>
+            <button type="button" class="btn btn-primary-custom" onclick="document.getElementById('fileInput').click()" style="padding: 14px 35px; font-size: 1rem;">
+                <i class="fas fa-upload me-2"></i>Upload CSV
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
+
+        // File Upload Handler
+        function handleFileSelect(event) {
+            const fileInput = event.target;
+            const form = document.getElementById('uploadForm');
+            
+            if (fileInput.files.length > 0) {
+                form.submit();
+            }
+        }
+
+        // Toggle History Section
+        function toggleHistory() {
+            const historySection = document.getElementById('historySectionTitle');
+            const historyList = document.getElementById('historyList');
+            historySection.classList.toggle('collapsed');
+            historyList.classList.toggle('collapsed');
+        }
+
+        // Toggle History Dropdown
+        function toggleHistoryDropdown() {
+            const dropdown = document.getElementById('historyDropdown');
+            const icon = document.getElementById('historyToggleIcon');
+            if (dropdown.style.display === 'none') {
+                dropdown.style.display = 'block';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                dropdown.style.display = 'none';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+
+        // Select CSV for all pages
+        function selectCSV(uploadId) {
+            if (uploadId) {
+                window.location.href = '/reprocess-csv/' + uploadId;
+            }
+        }
+        
+        // Navigate between CSV files
+        function navigateCSV(direction) {
+            const uploads = {{ uploads|tojson if uploads else '[]' }};
+            const currentIndex = {{ current_index if current_index is defined else 0 }};
+            
+            let newIndex;
+            if (direction === 'prev') {
+                newIndex = currentIndex - 1;
+            } else if (direction === 'next') {
+                newIndex = currentIndex + 1;
+            }
+            
+            if (newIndex >= 0 && newIndex < uploads.length) {
+                window.location.href = '/catalogue/view/' + uploads[newIndex].id;
+            }
+        }
+
+        // Reprocess CSV from history
+        function reprocessCSV(uploadId, page) {
+            if (uploadId) {
+                const targetPage = page || 'catalogue';
+                
+                if (targetPage === 'sku') {
+                    // Redirect to SKU page
+                    window.location.href = '/reprocess-csv/' + uploadId + '?redirect=sku';
+                } else if (targetPage === 'comparison') {
+                    // Redirect to comparison page
+                    window.location.href = '/reprocess-csv/' + uploadId + '?redirect=comparison';
+                } else if (targetPage === 'profit') {
+                    // Redirect to profit/loss page
+                    window.location.href = '/reprocess-csv/' + uploadId + '?redirect=profit';
+                } else {
+                    // Stay on Catalogue page
+                    window.location.href = '/reprocess-csv/' + uploadId;
+                }
+            }
+        }
+
+        var categoryData = JSON.parse('{{ data.categories|tojson if data and data.categories else "[]" }}');
+        var allOrdersData = JSON.parse('{{ data.chart_order_counts|tojson if data and data.chart_order_counts else "[]" }}');
+        var chartDates = JSON.parse('{{ data.chart_dates|tojson if data and data.chart_dates else "[]" }}');
+        var chartDisplayDates = JSON.parse('{{ data.chart_display_dates|tojson if data and data.chart_display_dates else "[]" }}');
+        var chartAmounts = JSON.parse('{{ data.chart_amounts|tojson if data and data.chart_amounts else "[]" }}');
+
+        var charts = {};
+        var selectedCharts = {};
+
+        function initAllCharts() {
+            var labels = categoryData.map(function(c) { return c.name; });
+            var orders = categoryData.map(function(c) { return c.orders; });
+            var revenues = categoryData.map(function(c) { return c.revenue; });
+            var returnRates = categoryData.map(function(c) { return c.return_rate; });
+            var avgOrders = categoryData.map(function(c) { return c.avg_order_value; });
+            var profitMargins = categoryData.map(function(c) { return c.profit_margin; });
+            var returns = categoryData.map(function(c) { return c.returns; });
+            var returnCosts = categoryData.map(function(c) { return c.return_cost; });
+            var perfScores = categoryData.map(function(c) { return c.performance_score; });
+
+            var colors = ['#4facfe', '#8a2be2', '#9400d3', '#ef4444', '#fbbf24', '#22c55e', '#f87171', '#6366f1', '#ec4899', '#14b8a6'];
+
+            // Basic Analysis Charts
+            charts.ordersBar = createChart('ordersBarChart', 'bar', {
+                labels: labels,
+                datasets: [{ label: 'Orders', data: orders, backgroundColor: colors, borderRadius: 8 }]
+            }, { legend: { display: false } });
+
+            charts.revenueBar = createChart('revenueBarChart', 'bar', {
+                labels: labels,
+                datasets: [{ label: 'Revenue ($)', data: revenues, backgroundColor: 'rgba(138, 43, 226, 0.8)', borderColor: '#8a2be2', borderWidth: 2, borderRadius: 8 }]
+            }, { legend: { display: false } });
+
+            charts.avgOrder = createChart('avgOrderChart', 'bar', {
+                labels: labels,
+                datasets: [{ label: 'Avg Order Value ($)', data: avgOrders, backgroundColor: 'rgba(79, 172, 254, 0.8)', borderRadius: 8 }]
+            }, { legend: { display: false } });
+
+            charts.returnRate = createChart('returnRateChart', 'bar', {
+                labels: labels,
+                datasets: [{ label: 'Return Rate (%)', data: returnRates, backgroundColor: returnRates.map(function(r) { return r > 15 ? 'rgba(239, 68, 68, 0.8)' : r > 10 ? 'rgba(251, 191, 36, 0.8)' : 'rgba(34, 197, 94, 0.8)'; }), borderRadius: 8 }]
+            }, { legend: { display: false } });
+
+            // Comparison Charts
+            charts.revenueProfit = createChart('revenueProfitChart', 'bar', {
+                labels: labels,
+                datasets: [
+                    { label: 'Revenue', data: revenues, backgroundColor: '#4facfe', borderRadius: 4 },
+                    { label: 'Profit', data: revenues.map(function(r, i) { return r * profitMargins[i] / 100; }), backgroundColor: '#22c55e', borderRadius: 4 }
+                ]
+            }, {});
+
+            charts.salesReturns = createChart('salesReturnsChart', 'bar', {
+                labels: labels,
+                datasets: [
+                    { label: 'Orders', data: orders, backgroundColor: '#4facfe', borderRadius: 4 },
+                    { label: 'Returns', data: returns, backgroundColor: '#ef4444', borderRadius: 4 }
+                ]
+            }, {});
+
+            charts.orderReturn = createChart('orderReturnChart', 'scatter', {
+                datasets: [{
+                    label: 'Categories',
+                    data: avgOrders.map(function(a, i) { return { x: a, y: returnCosts[i] }; }),
+                    backgroundColor: colors
+                }]
+            }, { scales: { x: { title: { display: true, text: 'Avg Order Value ($)', color: 'rgba(255,255,255,0.6)' }, ticks: { color: 'rgba(255,255,255,0.6)' }, grid: { color: 'rgba(255,255,255,0.1)' } }, y: { title: { display: true, text: 'Return Cost ($)', color: 'rgba(255,255,255,0.6)' }, ticks: { color: 'rgba(255,255,255,0.6)' }, grid: { color: 'rgba(255,255,255,0.1)' } } } });
+
+            charts.marginReturn = createChart('marginReturnChart', 'scatter', {
+                datasets: [{
+                    label: 'Categories',
+                    data: profitMargins.map(function(m, i) { return { x: m, y: returnRates[i] }; }),
+                    backgroundColor: colors,
+                    pointRadius: 10
+                }]
+            }, { scales: { x: { title: { display: true, text: 'Profit Margin (%)', color: 'rgba(255,255,255,0.6)' }, ticks: { color: 'rgba(255,255,255,0.6)' }, grid: { color: 'rgba(255,255,255,0.1)' } }, y: { title: { display: true, text: 'Return Rate (%)', color: 'rgba(255,255,255,0.6)' }, ticks: { color: 'rgba(255,255,255,0.6)' }, grid: { color: 'rgba(255,255,255,0.1)' } } } });
+
+            // Distribution Charts
+            charts.ordersDist = createChart('ordersDistChart', 'bar', {
+                labels: labels,
+                datasets: [{ label: 'Orders', data: orders, backgroundColor: 'rgba(79, 172, 254, 0.8)', borderRadius: 8 }]
+            }, { legend: { display: false } });
+
+            charts.revenueDist = createChart('revenueDistChart', 'bar', {
+                labels: labels,
+                datasets: [{ label: 'Revenue', data: revenues, backgroundColor: 'rgba(138, 43, 226, 0.8)', borderRadius: 8 }]
+            }, { legend: { display: false } });
+
+            // Share Charts (Pie)
+            charts.revenueShare = createChart('revenueShareChart', 'doughnut', {
+                labels: labels,
+                datasets: [{ data: revenues, backgroundColor: colors, borderWidth: 0 }]
+            }, { plugins: { legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.7)', font: { size: 10 } } } } });
+
+            charts.ordersShare = createChart('ordersShareChart', 'doughnut', {
+                labels: labels,
+                datasets: [{ data: orders, backgroundColor: colors, borderWidth: 0 }]
+            }, { plugins: { legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.7)', font: { size: 10 } } } } });
+
+            charts.returnsShare = createChart('returnsShareChart', 'doughnut', {
+                labels: labels,
+                datasets: [{ data: returns, backgroundColor: colors, borderWidth: 0 }]
+            }, { plugins: { legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.7)', font: { size: 10 } } } } });
+
+            // Pareto Chart
+            var sortedRev = categoryData.slice().sort(function(a, b) { return b.revenue - a.revenue; });
+            var totalRev = sortedRev.reduce(function(sum, c) { return sum + c.revenue; }, 0);
+            var cumSum = 0;
+            var cumPercent = sortedRev.map(function(c) { cumSum += c.revenue; return (cumSum / totalRev * 100).toFixed(1); });
+            
+            charts.pareto = new Chart(document.getElementById('paretoChart'), {
+                type: 'bar',
+                data: {
+                    labels: sortedRev.map(function(c) { return c.name; }),
+                    datasets: [
+                        { label: 'Revenue', data: sortedRev.map(function(c) { return c.revenue; }), backgroundColor: '#4facfe', borderRadius: 4, yAxisID: 'y' },
+                        { label: 'Cumulative %', data: cumPercent, type: 'line', borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 3, pointBackgroundColor: '#ef4444', yAxisID: 'y1' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.6)' } },
+                        y1: { beginAtZero: true, position: 'right', max: 100, grid: { display: false }, ticks: { color: '#ef4444', callback: function(v) { return v + '%'; } } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.6)' } }
+                    },
+                    plugins: { legend: { labels: { color: 'rgba(255,255,255,0.7)' } } }
+                }
+            });
+
+            // Update Pareto info
+            var top20 = sortedRev.filter(function(c) { return (parseFloat(cumPercent[sortedRev.indexOf(c)]) <= 80); }).length;
+            document.getElementById('paretoInfo').innerHTML = '<div class="insight-item info"><i class="fas fa-info-circle text-info"></i><p><strong>' + top20 + ' categories</strong> contribute to 80% of revenue.</p></div><div class="insight-item success"><i class="fas fa-trophy text-success"></i><p><strong>Top Category:</strong> ' + sortedRev[0].name + ' with $' + sortedRev[0].revenue.toLocaleString() + '</p></div>';
+
+            // Trend Charts
+            charts.revenueTrend = new Chart(document.getElementById('revenueTrendChart'), {
+                type: 'line',
+                data: {
+                    labels: chartDisplayDates.length > 0 ? chartDisplayDates : chartDates,
+                    datasets: [{
+                        label: 'Revenue ($)',
+                        data: chartAmounts,
+                        borderColor: '#4facfe',
+                        backgroundColor: 'rgba(79, 172, 254, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    var index = context[0].dataIndex;
+                                    return chartDates[index] || context[0].label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: 'rgba(255,255,255,0.6)' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'rgba(255,255,255,0.6)' }
+                        }
+                    }
+                }
+            });
+
+            charts.ordersTrend = new Chart(document.getElementById('ordersTrendChart'), {
+                type: 'line',
+                data: {
+                    labels: chartDisplayDates.length > 0 ? chartDisplayDates : chartDates,
+                    datasets: [{
+                        label: 'Orders',
+                        data: allOrdersData,
+                        borderColor: '#8a2be2',
+                        backgroundColor: 'rgba(138, 43, 226, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    var index = context[0].dataIndex;
+                                    return chartDates[index] || context[0].label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: 'rgba(255,255,255,0.6)' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'rgba(255,255,255,0.6)' }
+                        }
+                    }
+                }
+            });
+
+            charts.stackedArea = new Chart(document.getElementById('stackedAreaChart'), {
+                type: 'line',
+                data: {
+                    labels: chartDisplayDates.length > 0 ? chartDisplayDates : chartDates,
+                    datasets: labels.slice(0, 5).map(function(label, i) {
+                        return {
+                            label: label,
+                            data: chartAmounts.map(function() { return Math.random() * revenues[i] / 10; }),
+                            backgroundColor: colors[i] + '40',
+                            borderColor: colors[i],
+                            fill: true,
+                            tension: 0.4
+                        };
+                    })
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: 'rgba(255,255,255,0.7)' } },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    var index = context[0].dataIndex;
+                                    return chartDates[index] || context[0].label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            stacked: true,
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: 'rgba(255,255,255,0.6)' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'rgba(255,255,255,0.6)' }
+                        }
+                    }
+                }
+            });
+
+            charts.growthRate = createChart('growthRateChart', 'bar', {
+                labels: labels,
+                datasets: [{ label: 'Growth Rate (%)', data: categoryData.map(function() { return (Math.random() * 40 - 20).toFixed(1); }), backgroundColor: function(context) { return context.raw > 0 ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)'; }, borderRadius: 8 }]
+            }, { legend: { display: false } });
+
+            // Advanced Charts
+            charts.kpiRadar = new Chart(document.getElementById('kpiRadarChart'), {
+                type: 'radar',
+                data: {
+                    labels: ['Revenue', 'Orders', 'Profit Margin', 'Low Returns', 'Performance'],
+                    datasets: categoryData.slice(0, 5).map(function(cat, i) {
+                        return {
+                            label: cat.name,
+                            data: [
+                                (cat.revenue / revenues[0] * 100).toFixed(0),
+                                (cat.orders / orders[0] * 100).toFixed(0),
+                                (cat.profit_margin).toFixed(0),
+                                ((100 - cat.return_rate) / 100 * 100).toFixed(0),
+                                cat.performance_score
+                            ],
+                            borderColor: colors[i],
+                            backgroundColor: colors[i] + '30'
+                        };
+                    })
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, pointLabels: { color: 'rgba(255,255,255,0.7)' }, ticks: { display: false } } }, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.7)' } } } }
+            });
+
+            charts.performanceRanking = new Chart(document.getElementById('performanceRankingChart'), {
+                type: 'bar',
+                data: {
+                    labels: categoryData.slice().sort(function(a, b) { return b.performance_score - a.performance_score; }).map(function(c) { return c.name; }),
+                    datasets: [{ label: 'Performance Score', data: categoryData.slice().sort(function(a, b) { return b.performance_score - a.performance_score; }).map(function(c) { return c.performance_score; }), backgroundColor: 'rgba(79, 172, 254, 0.8)', borderRadius: 8 }]
+                },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.6)' } }, y: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.6)' } } } }
+            });
+
+            charts.salesProfitScatter = new Chart(document.getElementById('salesProfitScatter'), {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Categories',
+                        data: revenues.map(function(r, i) { return { x: r, y: r * profitMargins[i] / 100 }; }),
+                        backgroundColor: colors,
+                        pointRadius: 12
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { title: { display: true, text: 'Revenue ($)', color: 'rgba(255,255,255,0.6)' }, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.6)' } }, y: { title: { display: true, text: 'Profit ($)', color: 'rgba(255,255,255,0.6)' }, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.6)' } } }, plugins: { legend: { display: false } } }
+            });
+
+            charts.variance = createChart('varianceChart', 'bar', {
+                labels: labels.slice(0, 8),
+                datasets: [
+                    { label: 'Actual', data: revenues.slice(0, 8), backgroundColor: '#4facfe', borderRadius: 4 },
+                    { label: 'Target', data: revenues.slice(0, 8).map(function(r) { return r * 1.1; }), backgroundColor: '#22c55e', borderRadius: 4 }
+                ]
+            }, {});
+
+            // Calculate ABC classification
+            calculateABC();
+        }
+
+        function createChart(id, type, data, options) {
+            return new Chart(document.getElementById(id), { type: type, data: data, options: Object.assign({ responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.7)' } } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.6)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.6)' } } } }, options) });
+        }
+
+        function calculateABC() {
+            var sorted = categoryData.slice().sort(function(a, b) { return b.revenue - a.revenue; });
+            var total = sorted.reduce(function(sum, c) { return sum + c.revenue; }, 0);
+            var cumSum = 0;
+            
+            var abcA = 0, abcB = 0, abcC = 0;
+            var tableBody = document.querySelector('#abcTable tbody');
+            tableBody.innerHTML = '';
+
+            sorted.forEach(function(cat, i) {
+                cumSum += cat.revenue;
+                var share = (cat.revenue / total * 100).toFixed(2);
+                var cumPercent = (cumSum / total * 100).toFixed(2);
+                var abcClass = cumPercent <= 80 ? 'A' : cumPercent <= 95 ? 'B' : 'C';
+                if (abcClass === 'A') abcA++; else if (abcClass === 'B') abcB++; else abcC++;
+
+                var row = '<tr onclick="selectCategory(\'' + cat.name.replace(/'/g, "\\'") + '\')" style="cursor: pointer;">';
+                row += '<td>' + cat.name + '</td>';
+                row += '<td>$' + cat.revenue.toLocaleString() + '</td>';
+                row += '<td>' + share + '%</td>';
+                row += '<td>' + cumPercent + '%</td>';
+                row += '<td><span class="abc-badge abc-' + abcClass.toLowerCase() + '">' + abcClass + '</span></td>';
+                row += '<td><div class="progress-custom"><div class="progress-bar" style="width: ' + cat.performance_score + '%; background: ' + (cat.performance_score > 70 ? '#22c55e' : cat.performance_score < 40 ? '#ef4444' : '#fbbf24') + ';"></div></div></td>';
+                row += '</tr>';
+                tableBody.innerHTML += row;
+            });
+
+            document.getElementById('abcA').textContent = abcA;
+            document.getElementById('abcB').textContent = abcB;
+            document.getElementById('abcC').textContent = abcC;
+            var avgMargin = categoryData.reduce(function(sum, c) { return sum + c.profit_margin; }, 0) / categoryData.length;
+            document.getElementById('avgMargin').textContent = avgMargin.toFixed(1) + '%';
+        }
+
+        function selectCategory(categoryName) {
+            if (!categoryName) return;
+            
+            var select = document.getElementById('categorySelect');
+            if (select) select.value = categoryName;
+            
+            var cat = categoryData.find(function(c) { return c.name === categoryName; });
+            if (!cat) return;
+            
+            document.querySelectorAll('.cat-card').forEach(function(card) {
+                card.classList.remove('selected');
+                if (card.dataset.category === categoryName) {
+                    card.classList.add('selected');
+                }
+            });
+            
+            // Update KPIs
+            document.getElementById('kpiOrders').textContent = cat.orders;
+            document.getElementById('kpiRevenue').textContent = '$' + cat.revenue.toLocaleString('en-US', {maximumFractionDigits: 0});
+            document.getElementById('kpiReturns').textContent = cat.returns;
+            document.getElementById('kpiProfit').textContent = '$' + (cat.revenue - cat.return_cost).toLocaleString('en-US', {maximumFractionDigits: 0});
+            
+            // Show selected category section with 5 graphs
+            document.getElementById('selectedCategorySection').style.display = 'block';
+            document.getElementById('selectedCatName').textContent = cat.name;
+            
+            // Update selected category metrics
+            document.getElementById('selOrders').textContent = cat.orders;
+            document.getElementById('selRevenue').textContent = '$' + cat.revenue.toLocaleString('en-US', {maximumFractionDigits: 0});
+            document.getElementById('selAOV').textContent = '$' + cat.avg_order_value.toLocaleString('en-US', {maximumFractionDigits: 2});
+            
+            var perfEl = document.getElementById('selScore');
+            perfEl.textContent = cat.performance_score + '%';
+            perfEl.className = 'metric-value ' + (cat.performance_score > 70 ? 'positive' : cat.performance_score < 40 ? 'negative' : 'warning');
+            
+            var returnsEl = document.getElementById('selReturns');
+            returnsEl.textContent = cat.returns;
+            returnsEl.className = 'metric-value ' + (cat.return_rate > 15 ? 'negative' : '');
+            
+            var rateEl = document.getElementById('selReturnRate');
+            rateEl.textContent = cat.return_rate + '%';
+            rateEl.className = 'metric-value ' + (cat.return_rate > 15 ? 'negative' : cat.return_rate > 10 ? 'warning' : 'positive');
+            
+            document.getElementById('selReturnCost').textContent = '$' + cat.return_cost.toLocaleString('en-US', {maximumFractionDigits: 0});
+            var netProfit = cat.revenue - cat.return_cost;
+            var profitEl = document.getElementById('selProfit');
+            profitEl.textContent = '$' + netProfit.toLocaleString('en-US', {maximumFractionDigits: 0});
+            profitEl.className = 'metric-value ' + (netProfit > 0 ? 'positive' : 'negative');
+            
+            // Create selected category charts
+            createSelectedCategoryCharts(cat);
+            
+            // Update selected category insights
+            var insightsDiv = document.getElementById('selectedInsights');
+            var insightsHTML = '';
+            
+            if (cat.return_rate > 15) {
+                insightsHTML += '<div class="insight-item danger"><i class="fas fa-exclamation-triangle text-danger"></i><p><strong>High Return Rate:</strong> ' + cat.name + ' has ' + cat.return_rate + '% returns. Review product quality and descriptions.</p></div>';
+            } else if (cat.return_rate > 10) {
+                insightsHTML += '<div class="insight-item warning"><i class="fas fa-exclamation-circle text-warning"></i><p><strong>Elevated Returns:</strong> ' + cat.name + ' return rate is ' + cat.return_rate + '%. Monitor closely.</p></div>';
+            } else {
+                insightsHTML += '<div class="insight-item success"><i class="fas fa-check-circle text-success"></i><p><strong>Healthy Returns:</strong> ' + cat.name + ' has a good return rate of ' + cat.return_rate + '%.</p></div>';
+            }
+            
+            if (cat.performance_score > 70) {
+                insightsHTML += '<div class="insight-item success"><i class="fas fa-trophy text-success"></i><p><strong>Top Performer:</strong> ' + cat.name + ' is performing excellently with ' + cat.performance_score + '% score.</p></div>';
+            }
+            
+            if (cat.profit_margin < 10) {
+                insightsHTML += '<div class="insight-item warning"><i class="fas fa-dollar-sign text-warning"></i><p><strong>Low Margin:</strong> Profit margin is ' + cat.profit_margin + '%. Consider cost optimization.</p></div>';
+            }
+            
+            insightsHTML += '<div class="insight-item info"><i class="fas fa-chart-bar text-info"></i><p><strong>Revenue:</strong> $' + cat.revenue.toLocaleString() + ' across ' + cat.orders + ' orders.</p></div>';
+            insightsHTML += '<div class="insight-item info"><i class="fas fa-money-bill-wave text-info"></i><p><strong>Avg Order:</strong> $' + cat.avg_order_value.toFixed(2) + ' per order.</p></div>';
+            
+            insightsDiv.innerHTML = insightsHTML;
+        }
+
+        function createSelectedCategoryCharts(cat) {
+            var colors = ['#4facfe', '#8a2be2', '#9400d3', '#ef4444', '#fbbf24'];
+            
+            // Destroy existing charts
+            Object.keys(selectedCharts).forEach(function(key) {
+                if (selectedCharts[key]) selectedCharts[key].destroy();
+            });
+            selectedCharts = {};
+            
+            // Orders Breakdown (doughnut)
+            selectedCharts.orders = new Chart(document.getElementById('selectedOrdersChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Orders', 'Returns'],
+                    datasets: [{ data: [cat.orders - cat.returns, cat.returns], backgroundColor: ['#22c55e', '#ef4444'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.7)' } } } }
+            });
+            
+            // Revenue Breakdown
+            selectedCharts.revenue = new Chart(document.getElementById('selectedRevenueChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Revenue', 'Return Cost', 'Net Profit'],
+                    datasets: [{ data: [cat.revenue, cat.return_cost, cat.revenue - cat.return_cost], backgroundColor: ['#4facfe', '#ef4444', '#22c55e'], borderRadius: 8 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.6)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.6)' } } } }
+            });
+            
+            // Return Analysis
+            selectedCharts.returns = new Chart(document.getElementById('selectedReturnChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Return Rate', 'Profit Margin'],
+                    datasets: [{ data: [cat.return_rate, cat.profit_margin], backgroundColor: ['#ef4444', '#22c55e'], borderRadius: 8 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.6)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.6)' } } } }
+            });
+            
+            // Return Reasons (sample data)
+            var returnReasons = ['Wrong Product', 'Wrong Size', 'Quality Issue', 'Changed Mind', 'Other'];
+            var reasonData = [Math.floor(Math.random() * 30) + 10, Math.floor(Math.random() * 25) + 5, Math.floor(Math.random() * 20) + 5, Math.floor(Math.random() * 15) + 5, Math.floor(Math.random() * 10) + 2];
+            selectedCharts.reasons = new Chart(document.getElementById('selectedReturnReasonsChart'), {
+                type: 'pie',
+                data: {
+                    labels: returnReasons,
+                    datasets: [{ data: reasonData, backgroundColor: colors, borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.7)', font: { size: 10 } } } } }
+            });
+            
+            // Performance Trend
+            var trendLabels = chartDates.slice(-4);
+            var trendOrders = allOrdersData.slice(-4);
+            var trendRevenue = chartAmounts.slice(-4);
+            
+            selectedCharts.trend = new Chart(document.getElementById('selectedTrendChart'), {
+                type: 'line',
+                data: {
+                    labels: trendLabels,
+                    datasets: [
+                        { label: 'Orders', data: trendOrders, borderColor: '#4facfe', backgroundColor: 'rgba(79, 172, 254, 0.2)', fill: true, tension: 0.4 },
+                        { label: 'Revenue', data: trendRevenue, borderColor: '#22c55e', backgroundColor: 'transparent', tension: 0.4 }
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { labels: { color: 'rgba(255,255,255,0.7)' } }
+                    },
+                    scales: { 
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.6)' } }, 
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.6)' } } 
+                    } 
+                }
+            });
+        }
+
+        function searchCategories() {
+            var search = document.getElementById('categorySearch').value.toLowerCase();
+            var resultsDiv = document.getElementById('searchResults');
+            
+            if (search.length < 1) {
+                resultsDiv.innerHTML = '';
+                return;
+            }
+            
+            var results = categoryData.filter(function(c) {
+                return c.name.toLowerCase().includes(search);
+            });
+            
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<p style="color: rgba(255,255,255,0.5); text-align: center; padding: 20px;">No categories found</p>';
+                return;
+            }
+            
+            var html = '';
+            results.forEach(function(cat) {
+                html += '<div class="search-result-item" onclick="selectCategory(\'' + cat.name.replace(/'/g, "\\'") + '\')">';
+                html += '<h6><i class="fas fa-tag me-2" style="color: var(--primary-subtle);"></i>' + cat.name + '</h6>';
+                html += '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 0.85rem;">';
+                html += '<div><span style="color: rgba(255,255,255,0.6);">Revenue:</span> <span style="color: #fff;">$' + cat.revenue.toLocaleString() + '</span></div>';
+                html += '<div><span style="color: rgba(255,255,255,0.6);">Orders:</span> <span style="color: #fff;">' + cat.orders + '</span></div>';
+                html += '<div><span style="color: rgba(255,255,255,0.6);">Returns:</span> <span style="color: ' + (cat.return_rate > 15 ? '#f87171' : '#fff') + ';">' + cat.returns + ' (' + cat.return_rate + '%)</span></div>';
+                html += '</div></div>';
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initAllCharts();
+            
+            // Initialize sidebar state from localStorage
+            const sidebar = document.getElementById('sidebar');
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) {
+                sidebar.classList.add('collapsed');
+            }
+        });
+        
+        // Toggle sidebar collapse
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        }
+        
+        // Handle sidebar link clicks - when collapsed, expand instead of navigate
+        function handleSidebarClick(event, href) {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar.classList.contains('collapsed')) {
+                event.preventDefault();
+                sidebar.classList.remove('collapsed');
+                localStorage.setItem('sidebarCollapsed', 'false');
+                // Navigate after a short delay for better UX
+                if (href && href !== '#') {
+                    setTimeout(() => {
+                        window.location.href = href;
+                    }, 300);
+                }
+            }
+        }
+        
+        // Toggle mobile sidebar
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        }
+    </script>
+</body>
+</html>
