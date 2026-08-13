@@ -344,11 +344,7 @@ def send_otp_email(email, otp, purpose='verification'):
         except Exception as e:
             print(f"SMTP failed (Render blocks raw SMTP ports 25/465/587): {e}")
 
-    # Fallback log output for Render Dashboard
-    print(f"==================================================")
-    print(f"🔑 RENDER OTP LOG FOR {email}: [{otp}]")
-    print(f"==================================================")
-
+    print(f"Error: Email delivery failed for {email}")
     return False
 
 def is_otp_valid(otp_expiry):
@@ -1319,7 +1315,7 @@ def seller_register():
         if email_sent:
             flash(f'Verification code sent to {email}. Please check your inbox.', 'success')
         else:
-            flash(f'Verification code generated for {email}! Enter the 6-digit code below to complete verification.', 'info')
+            flash(f'Could not send verification email to {email}. Please check your email configuration.', 'danger')
 
         return redirect(url_for('verify_otp'))
     
@@ -1340,9 +1336,6 @@ def verify_otp():
         flash('Invalid verification request', 'danger')
         return redirect(url_for('seller_register'))
     
-    # Provide test_otp on screen as fallback so verification is always 100% accessible
-    test_otp = seller.otp_code
-    
     if request.method == 'POST':
         otp_input = request.form.get('otp', '')
         
@@ -1360,9 +1353,9 @@ def verify_otp():
             if email_sent:
                 flash('New OTP sent to your email. Please check your inbox.', 'success')
             else:
-                flash('New OTP generated! Enter the 6-digit code below to complete verification.', 'info')
+                flash('Could not send verification email. Please check your email configuration.', 'danger')
             
-            return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose, test_otp=new_otp)
+            return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose)
         
         # Verify OTP
         if seller.otp_code == otp_input and is_otp_valid(seller.otp_expiry):
@@ -1399,9 +1392,9 @@ def verify_otp():
             else:
                 flash('Invalid OTP. Please try again.', 'danger')
             
-            return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose, test_otp=test_otp)
+            return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose)
     
-    return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose, test_otp=test_otp)
+    return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose)
 
 @app.route('/seller-login', methods=['GET', 'POST'])
 def seller_login():

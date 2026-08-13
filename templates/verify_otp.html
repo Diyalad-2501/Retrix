@@ -342,11 +342,7 @@
                     {% endif %}
                 {% endwith %}
                 
-                {% if test_otp %}
-                    <div class="test-otp">
-                        <strong>Test Mode:</strong> Your OTP is <span class="h4">{{ test_otp }}</span>
-                    </div>
-                {% endif %}
+
                 
                 <form method="POST" action="{{ url_for('verify_otp') }}">
                     <div class="mb-4">
