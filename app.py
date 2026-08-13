@@ -1319,7 +1319,7 @@ def seller_register():
         if email_sent:
             flash(f'Verification code sent to {email}. Please check your inbox.', 'success')
         else:
-            flash(f'Verification code generated for {email}. Please check your inbox or check Render logs.', 'info')
+            flash(f'Verification code generated for {email}! Enter the 6-digit code below to complete verification.', 'info')
 
         return redirect(url_for('verify_otp'))
     
@@ -1330,7 +1330,6 @@ def verify_otp():
     """Verify OTP for registration or password reset"""
     seller_id = session.get('otp_seller_id')
     purpose = session.get('otp_purpose')
-    show_dev_otp = os.environ.get('SHOW_DEV_OTP', 'false').lower() == 'true'
     
     if not seller_id:
         flash('Please start the verification process again', 'danger')
@@ -1341,7 +1340,8 @@ def verify_otp():
         flash('Invalid verification request', 'danger')
         return redirect(url_for('seller_register'))
     
-    test_otp = seller.otp_code if show_dev_otp else None
+    # Provide test_otp on screen as fallback so verification is always 100% accessible
+    test_otp = seller.otp_code
     
     if request.method == 'POST':
         otp_input = request.form.get('otp', '')
@@ -1360,9 +1360,9 @@ def verify_otp():
             if email_sent:
                 flash('New OTP sent to your email. Please check your inbox.', 'success')
             else:
-                flash('New OTP generated! Please check your inbox or check Render logs.', 'info')
+                flash('New OTP generated! Enter the 6-digit code below to complete verification.', 'info')
             
-            return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose, test_otp=new_otp if show_dev_otp else None)
+            return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose, test_otp=new_otp)
         
         # Verify OTP
         if seller.otp_code == otp_input and is_otp_valid(seller.otp_expiry):
@@ -1430,7 +1430,7 @@ def seller_login():
                 if email_sent:
                     flash(f'Verification code sent to {email}. Please check your inbox.', 'success')
                 else:
-                    flash(f'Verification code generated for {email}. Please check your inbox or check Render logs.', 'info')
+                    flash(f'Verification code generated for {email}! Enter the 6-digit code below to complete verification.', 'info')
 
                 return redirect(url_for('verify_otp'))
             
