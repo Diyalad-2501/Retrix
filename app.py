@@ -244,7 +244,34 @@ def send_otp_email(email, otp, purpose='verification'):
         </html>
         """
 
-    # 1. Resend API (HTTP Port 443 - Never blocked on Render)
+    # 1. SendGrid API (HTTP Port 443 - Primary for Render)
+    if SENDGRID_API_KEY:
+        try:
+            req = urllib.request.Request(
+                "https://api.sendgrid.com/v3/mail/send",
+                data=json.dumps({
+                    "personalizations": [{"to": [{"email": email}]}],
+                    "from": {"email": EMAIL_USER or "noreply@retrix.com"},
+                    "subject": subject,
+                    "content": [{"type": "text/html", "value": body}]
+                }).encode('utf-8'),
+                headers={
+                    "Authorization": f"Bearer {SENDGRID_API_KEY.strip()}",
+                    "Content-Type": "application/json"
+                },
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status in (200, 201, 202):
+                    print(f"SUCCESS: OTP Email sent via SendGrid API to {email}")
+                    return True
+        except urllib.error.HTTPError as e_http:
+            err_body = e_http.read().decode('utf-8') if hasattr(e_http, 'fp') and e_http.fp else ""
+            print(f"SendGrid API HTTP Error {e_http.code}: {e_http.reason} - {err_body}")
+        except Exception as e:
+            print(f"SendGrid API Error: {e}")
+
+    # 2. Resend API (HTTP Port 443)
     if RESEND_API_KEY:
         try:
             req = urllib.request.Request(
@@ -270,30 +297,6 @@ def send_otp_email(email, otp, purpose='verification'):
             print(f"Resend API HTTP Error {e_http.code}: {e_http.reason} - {err_body}")
         except Exception as e:
             print(f"Resend API Error: {e}")
-
-    # 2. SendGrid API (HTTP Port 443 - Never blocked on Render)
-    if SENDGRID_API_KEY:
-        try:
-            req = urllib.request.Request(
-                "https://api.sendgrid.com/v3/mail/send",
-                data=json.dumps({
-                    "personalizations": [{"to": [{"email": email}]}],
-                    "from": {"email": EMAIL_USER},
-                    "subject": subject,
-                    "content": [{"type": "text/html", "value": body}]
-                }).encode('utf-8'),
-                headers={
-                    "Authorization": f"Bearer {SENDGRID_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                if resp.status in (200, 202):
-                    print(f"SUCCESS: OTP Email sent via SendGrid API to {email}")
-                    return True
-        except Exception as e:
-            print(f"SendGrid API Error: {e}")
 
     # 3. Brevo API (HTTP Port 443 - Never blocked on Render)
     if BREVO_API_KEY:
