@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retrix - SKU Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='uploads/favicon.png') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-subtle: #4facfe;
+            --secondary-subtle: #00f2fe;
+            --accent-subtle: #0f3460;
+            --card-bg: rgba(79, 172, 254, 0.08);
+            --card-border: rgba(79, 172, 254, 0.18);
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        
+        /* ========== SIDEBAR STYLES ========== */
+        .sidebar {
+            min-height: 100vh;
+            width: 260px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar.collapsed {
+            width: 70px;
+        }
+        .sidebar.collapsed ~ .main-content {
+            margin-left: 70px;
+        }
+        .sidebar.collapsed .sidebar-brand {
+            padding: 20px 10px;
+        }
+        .sidebar.collapsed .sidebar-brand h4 { font-size: 0; }
+        .sidebar.collapsed .sidebar-brand h4 i { margin-right: 0; }
+        .sidebar.collapsed .nav-indicator { display: none; }
+        .sidebar.collapsed .menu-toggle {
+            right: 50%;
+            transform: translateX(50%);
+        }
+        .sidebar.collapsed a:not(.logout-btn-bottom) {
+            justify-content: flex-start;
+            padding: 14px 10px;
+            margin: 4px 8px;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .sidebar.collapsed a:not(.logout-btn-bottom) i {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        .sidebar.collapsed .sidebar-link-text {
+            display: block;
+            font-size: 0.65rem;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+        .sidebar-top-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .sidebar-brand {
+            padding: 0;
+        }
+        .sidebar-brand h4 {
+            color: #fff;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+        .menu-toggle {
+            background: rgba(79, 172, 254, 0.3);
+            border: none;
+            color: #fff;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .menu-toggle:hover {
+            background: rgba(79, 172, 254, 0.5);
+        }
+        .sidebar a {
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 3px solid transparent;
+            margin: 4px 10px;
+            border-radius: 8px;
+            gap: 12px;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: linear-gradient(90deg, rgba(79, 172, 254, 0.2) 0%, transparent 100%);
+            color: #fff;
+            border-left-color: var(--accent-subtle);
+            transform: translateX(5px);
+        }
+        .sidebar a i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        .nav-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary-subtle);
+            margin-left: auto;
+            transition: all 0.3s ease;
+        }
+        .sidebar a:hover .nav-indicator {
+            background: var(--accent-subtle);
+            box-shadow: 0 0 10px var(--accent-subtle);
+        }
+        .sidebar-link-text {
+            flex: 1;
+            white-space: nowrap;
+        }
+        .logout-btn-bottom {
+            margin-top: auto;
+            background: rgba(245, 101, 101, 0.2);
+            border: 1px solid rgba(245, 101, 101, 0.3);
+            color: #fc8181;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .logout-btn-bottom:hover {
+            background: rgba(245, 101, 101, 0.3);
+            color: #f56565;
+        }
+        
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            margin-left: 260px;
+            padding: 30px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+        }
+        
+        /* ========== RESPONSIVE DESIGN ========== */
+        @media (max-width: 991px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .sidebar.show ~ .main-content-overlay {
+                position: fixed;
+            }
+            .sidebar-overlay {
+                display: none;
+            }
+            .sidebar-overlay.show {
+                display: block;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .mobile-toggle {
+                display: flex !important;
+            }
+        }
+        
+        /* Mobile Toggle Button */
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            left: 15px;
+            top: 15px;
+            z-index: 1001;
+            background: rgba(79, 172, 254, 0.3);
+            border: none;
+            color: #fff;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        .mobile-toggle:hover {
+            background: rgba(79, 172, 254, 0.5);
+            transform: scale(1.05);
+        }
+        
+        /* Mobile Navigation Container */
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            left: 15px;
+            top: 18px;
+            z-index: 1000;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .mobile-nav-btn {
+            width: 42px;
+            height: 42px;
+            background: rgba(79, 172, 254, 0.3);
+            border: none;
+            color: #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .mobile-nav-btn:hover, .mobile-nav-btn.active {
+            background: rgba(79, 172, 254, 0.6);
+            transform: scale(1.05);
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-nav {
+                display: flex;
+            }
+            .mobile-toggle {
+                display: none !important;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 20px 20px 20px 75px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 80px 12px 20px;
+            }
+        }
+        
+        /* Scroll Animations */
+        .scroll-fade {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease-out;
+        }
+        
+        .scroll-fade.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .scroll-scale {
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.6s ease-out;
+        }
+        
+        .scroll-scale.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        /* Card Animation */
+        .sku-card {
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: card-appear 0.6s ease forwards;
+        }
+        
+        @keyframes card-appear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .sku-card:nth-child(1) { animation-delay: 0.1s; }
+        .sku-card:nth-child(2) { animation-delay: 0.2s; }
+        .sku-card:nth-child(3) { animation-delay: 0.3s; }
+        .sku-card:nth-child(4) { animation-delay: 0.4s; }
+        .sku-card:nth-child(5) { animation-delay: 0.5s; }
+        
+        .sku-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.2);
+        }
+        
+        /* Section Title */
+        .section-title { color: #fff; font-size: 1.5rem; font-weight: 600; margin-bottom: 25px; }
+        
+        /* History Section */
+        .history-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .history-header {
+            cursor: pointer;
+            padding: 10px 0;
+        }
+        .history-header h5 {
+            color: #fff;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+        }
+        .history-header .toggle-icon {
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+        }
+        .history-dropdown {
+            display: none;
+        }
+        .history-dropdown.show {
+            display: block;
+        }
+        .csv-file-indicator {
+            display: flex;
+            align-items: center;
+        }
+        
+        .kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 25px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+        }
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-subtle), var(--accent-subtle));
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(138, 43, 226, 0.3);
+        }
+        .kpi-card i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--primary-subtle), var(--accent-subtle));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .kpi-card h3 {
+            color: #fff;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .kpi-card p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .chart-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 25px;
+            height: 100%;
+        }
+        .chart-card h5 {
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        .chart-container { height: 350px; position: relative; }
+        
+        .data-table {
+            width: 100%;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .data-table th, .data-table td {
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .data-table th {
+            color: var(--primary-subtle);
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        .data-table tr:hover { background: rgba(79, 172, 254, 0.1); }
+        
+        .badge-success { background: rgba(34, 197, 94, 0.2); color: #68d391; }
+        .badge-warning { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .badge-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        
+        .insight-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border-left: 3px solid;
+        }
+        .insight-item.danger { background: rgba(239, 68, 68, 0.1); border-left-color: #ef4444; }
+        .insight-item.warning { background: rgba(251, 191, 36, 0.1); border-left-color: #fbbf24; }
+        .insight-item.success { background: rgba(34, 197, 94, 0.1); border-left-color: #22c55e; }
+        .insight-item.info { background: rgba(59, 130, 246, 0.1); border-left-color: #3b82f6; }
+        
+        .file-selector, .sku-selector {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .file-selector select, .sku-selector select {
+            background: rgba(138, 43, 226, 0.1);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 10px;
+            padding: 12px 15px;
+            color: #fff;
+            width: 100%;
+        }
+        .file-selector select option, .sku-selector select option { background: #1a1a3e; color: #fff; }
+        
+        .ai-insights-box {
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(138, 43, 226, 0.1) 100%);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .ai-insights-box h5 {
+            color: var(--primary-subtle);
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .sku-detail-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .progress-custom {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-custom .progress-bar {
+            height: 100%;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(138, 43, 226, 0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4facfe, #8a2be2);
+            border-radius: 4px;
+        }
+        
+        .text-gradient {
+            background: linear-gradient(135deg, var(--primary-subtle), var(--accent-subtle));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .welcome-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+        }
+        .welcome-text span {
+            color: #fff;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Navigation with Hamburger and Quick Icons -->
+    <div class="mobile-nav">
+        <button class="mobile-nav-btn" onclick="toggleSidebar()" title="Menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <a href="/seller-dashboard" class="mobile-nav-btn" title="Dashboard">
+            <i class="fas fa-home"></i>
+        </a>
+        <a href="/catalogue" class="mobile-nav-btn" title="Catalogue">
+            <i class="fas fa-book"></i>
+        </a>
+        <a href="/sku-analysis" class="mobile-nav-btn active" title="SKU Analysis">
+            <i class="fas fa-barcode"></i>
+        </a>
+        <a href="/seller-comparison" class="mobile-nav-btn" title="Comparison">
+            <i class="fas fa-columns"></i>
+        </a>
+        <a href="/pl" class="mobile-nav-btn" title="Profit & Loss">
+            <i class="fas fa-chart-pie"></i>
+        </a>
+        <a href="/seller-settings" class="mobile-nav-btn" title="Settings">
+            <i class="fas fa-cog"></i>
+        </a>
+    </div>
+    
+    <!-- Mobile Toggle Button -->
+    <button class="mobile-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar pt-4" id="sidebar">
+        <div class="sidebar-top-actions">
+            <div class="sidebar-brand">
+                <h4 class="text-center"><i class="fas fa-cube me-2"></i><span class="sidebar-link-text">Retrix</span></h4>
+            </div>
+            <button class="menu-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <a href="/seller-dashboard">
+            <i class="fas fa-home"></i>
+            <span class="sidebar-link-text">Dashboard</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/catalogue">
+            <i class="fas fa-book"></i>
+            <span class="sidebar-link-text">Catalogue Analysis</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/sku-analysis" class="active">
+            <i class="fas fa-barcode"></i>
+            <span class="sidebar-link-text">SKU Analysis</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/seller-comparison">
+            <i class="fas fa-columns"></i>
+            <span class="sidebar-link-text">Comparison</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/pl">
+            <i class="fas fa-chart-pie"></i>
+            <span class="sidebar-link-text">Profit & Loss</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/seller-settings">
+            <i class="fas fa-cog"></i>
+            <span class="sidebar-link-text">Settings</span>
+            <div class="nav-indicator"></div>
+        </a>
+        
+        <!-- Logout -->
+        <a href="/seller-logout" class="logout-btn-bottom">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="sidebar-link-text">Logout</span>
+        </a>
+    </div>
+
+    <div class="main-content">
+        <div class="header-section mb-4" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 30px;">
+          <div>
+            <h1 class="section-title mb-0">SKU Analysis</h1>
+          </div>
+          {% if selected_upload %}
+          <span class="csv-file-indicator" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+            <i class="fas fa-file-csv" style="color: #4facfe; margin-right: 8px;"></i>
+            <span class="csv-file-name" title="{{ selected_upload.original_name }}" style="color: var(--primary-subtle); font-weight: 500;">
+              {{ selected_upload.original_name }}
+            </span>
+          </span>
+          {% elif uploads %}
+          <span class="csv-file-indicator" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+            <span style="color: var(--primary-subtle); font-weight: 500;">Select a file from Upload History</span>
+          </span>
+          {% else %}
+          <span class="csv-file-indicator" style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">
+            <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
+            No CSV files uploaded
+          </span>
+          {% endif %}
+        </div>
+        <div class="history-section mb-4">
+          <div class="history-header" onclick="toggleHistoryDropdown()">
+            <h5>
+              <i class="fas fa-history"></i>
+              Upload History
+              <i class="fas fa-chevron-down toggle-icon" id="historyToggleIcon"></i>
+            </h5>
+          </div>
+          <div class="history-dropdown" id="historyDropdown">
+            {% if uploads %}
+            <div style="max-height: 250px; overflow-y: auto; background: rgba(15,23,42,0.5); border-radius: 8px; padding: 10px; margin-top: 15px;">
+              <table style="width: 100%; border-collapse: collapse;">
+                {% for upload in uploads %}
+                <tr onclick="selectCSV('{{ upload.id }}')" style="cursor: pointer;{% if selected_upload and selected_upload.id == upload.id %} background: rgba(34, 197, 94, 0.2);{% endif %}">
+                  <td style="padding: 14px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                    <i class="fas fa-file-csv" style="color: #4facfe; margin-right: 10px;"></i>
+                    <span style="color: #e5e7eb; font-size: 0.9rem;">{{ upload.original_name }}</span>
+                  </td>
+                  <td style="padding: 14px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); text-align: right;">
+                    <span style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">{{ upload.upload_date }}</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </table>
+            </div>
+            {% else %}
+            <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem; margin-top: 10px;">No previous uploads found.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-12">
+                <div class="chart-card">
+                    <h5><i class="fas fa-chart-bar me-2"></i>SKU Revenue Analysis</h5>
+                    <div class="chart-container">
+                        <canvas id="skuRevenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if not data.sku_data %}
+        <div class="alert alert-warning" style="background: rgba(251, 191, 36, 0.2); border: 1px solid rgba(251, 191, 36, 0.3); color: #fbbf24;">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            No CSV data available. Please upload a CSV file to view SKU analysis.
+        </div>
+        {% else %}
+        
+        <!-- KPI Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="kpi-card">
+                    <i class="fas fa-shopping-cart"></i>
+                    <h3>{{ data.total_orders }}</h3>
+                    <p>Total Orders</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card">
+                    <i class="fas fa-rupee-sign"></i>
+                    <h3>Rs{{ "{:,.0f}".format(data.net_sales) }}</h3>
+                    <p>Net Sales</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card {% if data.return_percent > 10 %}warning{% elif data.return_percent > 5 %}success{% else %}success{% endif %}">
+                    <i class="fas fa-undo"></i>
+                    <h3>{{ data.return_percent }}%</h3>
+                    <p>Return Rate</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card">
+                    <i class="fas fa-trending-up"></i>
+                    <h3>Rs{{ "{:,.0f}".format(data.net_profit) }}</h3>
+                    <p>Net Profit</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Insights Box -->
+        <div class="ai-insights-box">
+            <h5><i class="fas fa-robot me-2"></i>Data-Insights</h5>
+            {% if data.insights.dangers %}
+            {% for danger in data.insights.dangers %}
+            <div class="insight-item danger">
+                <i class="fas fa-exclamation-circle text-danger mt-1"></i>
+                <p class="mb-0">{{ danger }}</p>
+            </div>
+            {% endfor %}
+            {% endif %}
+            
+            {% if data.insights.warnings %}
+            {% for warning in data.insights.warnings %}
+            <div class="insight-item warning">
+                <i class="fas fa-exclamation-triangle text-warning mt-1"></i>
+                <p class="mb-0">{{ warning }}</p>
+            </div>
+            {% endfor %}
+            {% endif %}
+            
+            {% if data.insights.successes %}
+            {% for success in data.insights.successes %}
+            <div class="insight-item success">
+                <i class="fas fa-check-circle text-success mt-1"></i>
+                <p class="mb-0">{{ success }}</p>
+            </div>
+            {% endfor %}
+            {% endif %}
+            
+            {% if data.insights.recommendations %}
+            <div class="insight-item info mt-3">
+                <i class="fas fa-lightbulb text-info mt-1"></i>
+                <div>
+                    <strong class="text-white">Recommendations:</strong>
+                    <ul class="mb-0 mt-2 ps-3">
+                        {% for rec in data.insights.recommendations %}
+                        <li>{{ rec }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if data.insights.actions %}
+            <div class="insight-item mt-3" style="background: rgba(34, 197, 94, 0.1); border-left-color: #22c55e;">
+                <i class="fas fa-tasks text-success mt-1"></i>
+                <div>
+                    <strong class="text-white">Action Items:</strong>
+                    <ul class="mb-0 mt-2 ps-3">
+                        {% for action in data.insights.actions %}
+                        <li><strong>{{ action.title }}:</strong> {{ action.description }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- SKU Selector -->
+        <div class="sku-selector">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <label class="text-white mb-0"><i class="fas fa-search me-2"></i>Select SKU for Individual Analysis</label>
+                </div>
+                <div class="col-md-8">
+                    <select class="form-select" id="skuSelect" onchange="analyzeSKU(this.value)">
+                        <option value="">-- Select a SKU --</option>
+                        {% if data.top_skus %}
+                        {% for sku in data.top_skus %}
+                        <option value="{{ sku.sku }}">{{ sku.sku }} ({{ sku.orders }} orders | Rs{{ sku.revenue }})</option>
+                        {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="individualSkuSection" style="display: none;">
+            <div class="sku-detail-card">
+                <h4 class="mb-4"><i class="fas fa-box-open me-2"></i>Individual SKU Analysis: <span id="selectedSkuName" class="text-gradient"></span></h4>
+                
+                <div class="row g-4 mb-4" id="skuMetricsRow"></div>
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-chart-bar me-2"></i>SKU Performance</h5>
+                            <div class="chart-container">
+                                <canvas id="skuPerformanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-robot me-2"></i>AI Analysis for This SKU</h5>
+                            <div id="skuAIInsights"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Top Returned SKUs</h5>
+                    <div class="chart-container">
+                        <canvas id="skuReturnChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <h5><i class="fas fa-chart-bar me-2"></i>SKU Quantity / Sales</h5>
+                    <div class="chart-container">
+                        <canvas id="skuQuantityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-card mb-4">
+            <h5><i class="fas fa-trophy me-2"></i>Top Performing SKUs</h5>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Category</th>
+                            <th>Orders</th>
+                            <th>Revenue</th>
+                            <th>Profit Margin</th>
+                            <th>Return Rate</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if data.top_skus %}
+                        {% for sku in data.top_skus %}
+                        <tr>
+                            <td><strong>{{ sku.sku }}</strong></td>
+                            <td>{{ sku.category }}</td>
+                            <td>{{ sku.orders }}</td>
+                            <td>Rs{{ "{:,.2f}".format(sku.revenue) }}</td>
+                            <td>
+                                <span class="badge badge-success">{{ sku.profit_margin }}%</span>
+                            </td>
+                            <td>
+                                <span class="badge {% if sku.return_rate > 10 %}badge-danger{% elif sku.return_rate > 5 %}badge-warning{% else %}badge-success{% endif %}">
+                                    {{ sku.return_rate }}%
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" style="border-color: rgba(79, 172, 254, 0.5); color: #4facfe;" onclick="selectSKU('{{ sku.sku }}')">
+                                    <i class="fas fa-eye"></i> Analyze
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">No SKU data available</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Scroll Animation Observer
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const scrollObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.scroll-fade, .scroll-scale').forEach(el => {
+            scrollObserver.observe(el);
+        });
+        
+        // Sidebar Toggle Functions
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const isMobile = window.innerWidth <= 992;
+            
+            if (isMobile) {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+                // Toggle hamburger to X
+                const menuIcon = document.querySelector('.menu-toggle i');
+                if (sidebar.classList.contains('show')) {
+                    menuIcon.classList.remove('fa-bars');
+                    menuIcon.classList.add('fa-times');
+                } else {
+                    menuIcon.classList.remove('fa-times');
+                    menuIcon.classList.add('fa-bars');
+                }
+            } else {
+                sidebar.classList.toggle('collapsed');
+            }
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+            const menuIcon = document.querySelector('.menu-toggle i');
+            if (menuIcon) {
+                menuIcon.classList.remove('fa-times');
+                menuIcon.classList.add('fa-bars');
+            }
+        }
+        
+        // Close sidebar on window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 992) {
+                closeSidebar();
+            }
+        });
+        
+        function toggleHistoryDropdown() {
+            const dropdown = document.getElementById('historyDropdown');
+            const icon = document.getElementById('historyToggleIcon');
+            if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+                dropdown.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                dropdown.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+        
+        function selectCSV(uploadId) {
+            window.location.href = '/sku-analysis?upload_id=' + uploadId;
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if data.sku_data and data.chart_dates|length > 0 %}
+            initCharts();
+            {% endif %}
+        });
+
+        function initCharts() {
+            const chartDates = {{ data.chart_display_dates | tojson }};
+            const chartAmounts = {{ data.chart_amounts | tojson }};
+            const chartOrders = {{ data.chart_order_counts | tojson }};
+            const pieLabels = {{ data.pie_labels | tojson }};
+            const pieValues = {{ data.pie_values | tojson }};
+            const skuLabels = {{ data.sku_labels | tojson }};
+            const skuValues = {{ data.sku_values | tojson }};
+            const topSkusData = {{ data.top_skus | tojson }};
+
+            // Top Returned SKUs Chart
+            new Chart(document.getElementById('skuReturnChart'), {
+                type: 'bar',
+                data: {
+                    labels: skuLabels,
+                    datasets: [{
+                        label: 'Return Count',
+                        data: skuValues,
+                        backgroundColor: 'rgba(251, 191, 36, 0.6)',
+                        borderColor: '#fbbf24',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { labels: { color: 'rgba(255,255,255,0.7)' } },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
+                                    return [
+                                        'SKU: ' + context.label,
+                                        'Returns: ' + context.raw,
+                                        'Share: ' + percentage + '%'
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            ticks: { color: 'rgba(255,255,255,0.7)' }, 
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            title: { display: true, text: 'Number of Returns', color: 'rgba(255,255,255,0.5)' }
+                        },
+                        y: { 
+                            ticks: { color: 'rgba(255,255,255,0.7)' }, 
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            title: { display: true, text: 'SKU', color: 'rgba(255,255,255,0.5)' }
+                        }
+                    }
+                }
+            });
+
+            // SKU Quantity / Sales Chart
+            new Chart(document.getElementById('skuQuantityChart'), {
+                type: 'bar',
+                data: {
+                    labels: topSkusData.map(s => s.sku),
+                    datasets: [{
+                        label: 'Quantity Sold',
+                        data: topSkusData.map(s => s.orders),
+                        backgroundColor: 'rgba(79, 172, 254, 0.7)',
+                        borderColor: '#4facfe',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: 'rgba(255,255,255,0.7)' } },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            padding: 12,
+                            callbacks: {
+                                title: function(context) {
+                                    return 'SKU: ' + context[0].label;
+                                },
+                                label: function(context) {
+                                    const skuData = topSkusData.find(s => s.sku === context.label);
+                                    return [
+                                        'Quantity Sold: ' + context.raw,
+                                        'Revenue: Rs' + (skuData ? skuData.revenue.toLocaleString() : '0'),
+                                        'Category: ' + (skuData ? skuData.category : 'N/A'),
+                                        'Return Rate: ' + (skuData ? skuData.return_rate + '%' : 'N/A')
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            ticks: { color: 'rgba(255,255,255,0.7)' }, 
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            title: { display: true, text: 'SKU ID', color: 'rgba(255,255,255,0.5)' }
+                        },
+                        y: { 
+                            ticks: { color: 'rgba(255,255,255,0.7)' }, 
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            title: { display: true, text: 'Quantity Sold', color: 'rgba(255,255,255,0.5)' }
+                        }
+                    }
+                }
+            });
+
+            // SKU Revenue Chart
+            new Chart(document.getElementById('skuRevenueChart'), {
+                type: 'bar',
+                data: {
+                    labels: topSkusData.map(s => s.sku),
+                    datasets: [{
+                        label: 'Revenue (Rs)',
+                        data: topSkusData.map(s => s.revenue),
+                        backgroundColor: topSkusData.map(s => {
+                            if (s.profit_margin > 40) return 'rgba(34, 197, 94, 0.7)';
+                            if (s.profit_margin > 20) return 'rgba(79, 172, 254, 0.7)';
+                            return 'rgba(251, 191, 36, 0.7)';
+                        }),
+                        borderColor: topSkusData.map(s => {
+                            if (s.profit_margin > 40) return '#22c55e';
+                            if (s.profit_margin > 20) return '#4facfe';
+                            return '#fbbf24';
+                        }),
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: 'rgba(255,255,255,0.7)' } },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            padding: 12,
+                            callbacks: {
+                                title: function(context) {
+                                    return 'SKU: ' + context[0].label;
+                                },
+                                label: function(context) {
+                                    const skuData = topSkusData.find(s => s.sku === context.label);
+                                    return [
+                                        'Revenue: Rs' + context.raw.toLocaleString(),
+                                        'Orders: ' + (skuData ? skuData.orders : 0),
+                                        'Profit Margin: ' + (skuData ? skuData.profit_margin + '%' : 'N/A'),
+                                        'Return Rate: ' + (skuData ? skuData.return_rate + '%' : 'N/A'),
+                                        'Category: ' + (skuData ? skuData.category : 'N/A')
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            ticks: { color: 'rgba(255,255,255,0.7)' }, 
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            title: { display: true, text: 'SKU ID', color: 'rgba(255,255,255,0.5)' }
+                        },
+                        y: { 
+                            ticks: { 
+                                color: 'rgba(255,255,255,0.7)',
+                                callback: function(value) { return 'Rs' + value.toLocaleString(); }
+                            }, 
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            title: { display: true, text: 'Revenue (Rs)', color: 'rgba(255,255,255,0.5)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function changeFile(fileId) {
+            window.location.href = '/sku-analysis/view/' + fileId;
+        }
+
+        function selectSKU(skuName) {
+            document.getElementById('skuSelect').value = skuName;
+            analyzeSKU(skuName);
+        }
+
+        function analyzeSKU(skuName) {
+            if (!skuName) {
+                document.getElementById('individualSkuSection').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('individualSkuSection').style.display = 'block';
+            document.getElementById('selectedSkuName').textContent = skuName;
+
+            const skuData = {{ data.top_skus | tojson }};
+            const selectedSku = skuData.find(s => s.sku === skuName);
+
+            if (selectedSku) {
+                document.getElementById('skuMetricsRow').innerHTML = `
+                    <div class="col-md-3"><div class="kpi-card"><i class="fas fa-shopping-cart"></i><h3>${selectedSku.orders}</h3><p>Total Orders</p></div></div>
+                    <div class="col-md-3"><div class="kpi-card"><i class="fas fa-rupee-sign"></i><h3>Rs${selectedSku.revenue.toLocaleString()}</h3><p>Revenue</p></div></div>
+                    <div class="col-md-3"><div class="kpi-card ${selectedSku.return_rate > 10 ? 'warning' : 'success'}"><i class="fas fa-undo"></i><h3>${selectedSku.return_rate}%</h3><p>Return Rate</p></div></div>
+                    <div class="col-md-3"><div class="kpi-card ${selectedSku.profit_margin > 30 ? 'success' : selectedSku.profit_margin > 15 ? 'warning' : 'danger'}"><i class="fas fa-percent"></i><h3>${selectedSku.profit_margin}%</h3><p>Profit Margin</p></div></div>
+                `;
+
+                let insightsHTML = '';
+                
+                // Return Rate Analysis
+                if (selectedSku.return_rate > 15) {
+                    insightsHTML += `<div class="insight-item danger"><i class="fas fa-exclamation-circle text-danger mt-1"></i><p class="mb-0"><strong>High Return Rate Alert:</strong> This SKU has a return rate of ${selectedSku.return_rate}%, significantly above average. Immediate attention required.</p></div>`;
+                } else if (selectedSku.return_rate > 8) {
+                    insightsHTML += `<div class="insight-item warning"><i class="fas fa-exclamation-triangle text-warning mt-1"></i><p class="mb-0"><strong>Moderate Return Rate:</strong> This SKU's return rate of ${selectedSku.return_rate}% is slightly elevated. Monitor closely.</p></div>`;
+                } else {
+                    insightsHTML += `<div class="insight-item success"><i class="fas fa-check-circle text-success mt-1"></i><p class="mb-0"><strong>Healthy Return Rate:</strong> This SKU has a low return rate of ${selectedSku.return_rate}%, indicating good customer satisfaction.</p></div>`;
+                }
+
+                // Profit Margin Analysis
+                if (selectedSku.profit_margin > 40) {
+                    insightsHTML += `<div class="insight-item success"><i class="fas fa-dollar-sign text-success mt-1"></i><p class="mb-0"><strong>Excellent Profitability:</strong> This SKU has a profit margin of ${selectedSku.profit_margin}%. Consider increasing marketing spend or inventory.</p></div>`;
+                } else if (selectedSku.profit_margin < 20) {
+                    insightsHTML += `<div class="insight-item warning"><i class="fas fa-dollar-sign text-warning mt-1"></i><p class="mb-0"><strong>Low Profit Margin:</strong> This SKU's profit margin of ${selectedSku.profit_margin}% is below target. Review pricing or supplier costs.</p></div>`;
+                } else {
+                    insightsHTML += `<div class="insight-item info"><i class="fas fa-dollar-sign text-info mt-1"></i><p class="mb-0"><strong>Healthy Profit Margin:</strong> This SKU has a profit margin of ${selectedSku.profit_margin}%.</p></div>`;
+                }
+
+                // Demand Analysis
+                if (selectedSku.orders > 50) {
+                    insightsHTML += `<div class="insight-item success"><i class="fas fa-fire text-success mt-1"></i><p class="mb-0"><strong>High Demand:</strong> This SKU has ${selectedSku.orders} orders, making it a top performer. Ensure adequate inventory.</p></div>`;
+                } else if (selectedSku.orders < 10) {
+                    insightsHTML += `<div class="insight-item warning"><i class="fas fa-arrow-down text-warning mt-1"></i><p class="mb-0"><strong>Low Demand:</strong> This SKU has only ${selectedSku.orders} orders. Consider promotions or discontinuation.</p></div>`;
+                }
+
+                // Action Items
+                insightsHTML += `
+                    <div class="insight-item mt-3" style="background: rgba(34, 197, 94, 0.1); border-left-color: #22c55e;">
+                        <i class="fas fa-tasks text-success mt-1"></i>
+                        <div>
+                            <strong class="text-white">Recommended Actions:</strong>
+                            <ul class="mb-0 mt-2 ps-3">
+                                <li>Monitor return reasons specific to this SKU</li>
+                                <li>Analyze customer reviews for improvement areas</li>
+                                <li>Compare pricing with competitors</li>
+                                <li>Consider bundle opportunities with complementary products</li>
+                                <li>Review inventory levels to prevent stockouts</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('skuAIInsights').innerHTML = insightsHTML;
+
+                // SKU Performance Chart
+                new Chart(document.getElementById('skuPerformanceChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['Orders', 'Revenue (Rs)', 'Return Rate (%)', 'Profit Margin (%)'],
+                        datasets: [{
+                            label: skuName,
+                            data: [selectedSku.orders, selectedSku.revenue, selectedSku.return_rate, selectedSku.profit_margin],
+                            backgroundColor: [
+                                'rgba(79, 172, 254, 0.6)',
+                                'rgba(34, 197, 94, 0.6)',
+                                'rgba(251, 191, 36, 0.6)',
+                                'rgba(138, 43, 226, 0.6)'
+                            ],
+                            borderColor: ['#4facfe', '#22c55e', '#fbbf24', '#8a2be2'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                callbacks: {
+                                    label: function(context) {
+                                        if (context.dataIndex === 0) return 'Orders: ' + context.raw;
+                                        if (context.dataIndex === 1) return 'Revenue: Rs' + context.raw.toLocaleString();
+                                        return context.raw + '%';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { 
+                                ticks: { color: 'rgba(255,255,255,0.7)' }, 
+                                grid: { color: 'rgba(255,255,255,0.05)' }
+                            },
+                            y: { 
+                                ticks: { color: 'rgba(255,255,255,0.7)' }, 
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            document.getElementById('individualSkuSection').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+{% include 'pdf_download_btn.html' %}
+</body>
+</html>
+
+
+

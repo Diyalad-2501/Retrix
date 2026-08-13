@@ -1,0 +1,24 @@
+﻿services:
+  - type: web
+    name: retrix
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: FLASK_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: retrix-db
+          property: connectionString
+
+databases:
+  - name: retrix-db
+    databaseName: retrix
+    plan: free

@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retrix – About</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='uploads/favicon.png') }}">
+  <link href="{{ url_for('static', filename='css/futuristic-bg.css') }}" rel="stylesheet">
+
+  <style>
+    /* ===============================
+   NAVBAR STYLES
+   =============================== */
+    .navbar {
+        background: rgba(22, 33, 62, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 15px 0;
+        position: fixed;
+        width: 100%;
+        top: 0;
+        z-index: 1000;
+        border-bottom: 1px solid rgba(79, 172, 254, 0.2);
+    }
+    
+    .navbar-brand {
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: 3px;
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .nav-link {
+        color: rgba(255, 255, 255, 0.8) !important;
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+        margin: 0 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .nav-link:hover {
+        color: #4facfe !important;
+    }
+    
+    .btn-login {
+        background: rgba(79, 172, 254, 0.1);
+        border: 1px solid rgba(79, 172, 254, 0.5);
+        color: #4facfe;
+        padding: 8px 25px;
+        border-radius: 5px;
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-login:hover {
+        background: rgba(79, 172, 254, 0.2);
+        border-color: #4facfe;
+        color: #fff;
+    }
+    
+    .btn-signup {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        border: none;
+        color: #fff;
+        padding: 8px 25px;
+        border-radius: 5px;
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-signup:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(79, 172, 254, 0.4);
+        color: #fff;
+    }
+
+    /* ===============================
+   GLOBAL BACKGROUND & TYPOGRAPHY
+   =============================== */
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* 🔥 ONE BACKGROUND FOR ENTIRE PAGE */
+  background: linear-gradient(
+    135deg,
+    #0f172a 0%,     /* deep navy */
+    #111827 45%,    /* slate */
+    #020617 100%    /* near black */
+  );
+
+  color: #e5e7eb;
+  overflow-x: hidden;
+}
+
+/* ===============================
+   HERO SECTION
+   =============================== */
+.hero-section {
+  padding: 6.5rem 1rem 5rem;
+}
+
+.hero-content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  background: linear-gradient(
+    135deg,
+    rgba(30, 64, 175, 0.45),   /* deep blue */
+    rgba(15, 23, 42, 0.95)
+  );
+  border: 1px solid rgba(100, 120, 140, 0.25);
+  border-radius: 22px;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+/* HERO TITLE */
+.hero-title {
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 1.6rem;
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  color: #e5e7eb;
+}
+
+.hero-title span {
+  background: linear-gradient(
+    135deg,
+    #60a5fa,
+    #38b2ac
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* HERO SUBTITLE */
+.hero-subtitle {
+  font-weight: 700;
+  font-style: italic;
+  color: #cbd5e1;
+  margin-bottom: 1rem;
+}
+
+/* HERO SUPPORT TEXT */
+.hero-support {
+  font-size: 0.95rem;
+  color: #94a3b8;
+  max-width: 620px;
+  margin: 0 auto;
+  font-weight: 500;
+}
+
+/* ===============================
+   MOTTO SECTION (PURE BODY BG)
+   =============================== */
+.motto {
+  padding: 6rem 1.5rem;
+  text-align: center;
+}
+
+.motto-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* SECTION LABEL */
+.motto-head {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.85rem;
+  color: #7dd3fc;
+  margin-bottom: 0.5rem;
+}
+
+/* SECTION TITLE */
+.motto-why {
+  font-size: clamp(1.9rem, 4vw, 2.5rem);
+  font-weight: 800;
+  margin-bottom: 2.5rem;
+  background: linear-gradient(
+    135deg,
+    #e5e7eb,
+    #cbd5e1
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* PROBLEM PARAGRAPH */
+.motto-prob {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: #cbd5e1;
+  max-width: 780px;
+  margin: 0 auto 2.5rem;
+}
+
+/* SOLUTION – BORDER & GLOW ONLY */
+.motto-solution-box {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 1.75rem 2rem;
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1px rgba(56, 178, 172, 0.08),
+    0 20px 45px rgba(0, 0, 0, 0.35);
+}
+
+.motto-sol {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: #67e8f9;
+  font-weight: 500;
+}
+
+/* ===============================
+   MOBILE RESPONSIVENESS
+   =============================== */
+@media (max-width: 576px) {
+  .hero-section {
+    padding: 4.5rem 1rem 3.5rem;
+  }
+
+  .hero-content {
+    padding: 2.5rem 1.5rem;
+  }
+
+  .hero-support,
+  .motto-prob,
+  .motto-sol {
+    font-size: 0.95rem;
+  }
+
+  .motto {
+    padding: 4.5rem 1.25rem;
+  }
+
+  .motto-solution-box {
+    padding: 1.5rem;
+  }
+}
+/* ===============================
+   FEATURES SECTION
+   =============================== */
+.features {
+  padding: 6rem 1.5rem;
+}
+
+.features-header {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.features-label {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.8rem;
+  color: #7dd3fc;
+  margin-bottom: 0.5rem;
+}
+
+.features-title {
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, #e5e7eb, #9ca3af);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* FEATURE CARD */
+/* FEATURE CARD – STRONGER COLOR GLASS */
+.feature-card {
+  height: 100%;
+  padding: 2rem;
+  border-radius: 18px;
+  position: relative;
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(140, 170, 200, 0.35);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 20px 55px rgba(0, 0, 0, 0.55);
+  transition: all 0.35s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 35px 80px rgba(0, 0, 0, 0.75);
+}
+
+/* ===== COLOR VARIANTS (BOOSTED) ===== */
+
+.feature-card.blue {
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.35),
+    rgba(17, 40, 85, 0.9)
+  );
+}
+
+.feature-card.orange {
+  background: linear-gradient(
+    135deg,
+    rgba(249, 115, 22, 0.4),
+    rgba(75, 29, 12, 0.9)
+  );
+}
+
+.feature-card.green {
+  background: linear-gradient(
+    135deg,
+    rgba(34, 197, 94, 0.38),
+    rgba(6, 45, 28, 0.9)
+  );
+}
+
+.feature-card.teal {
+  background: linear-gradient(
+    135deg,
+    rgba(45, 212, 191, 0.4),
+    rgba(10, 60, 58, 0.9)
+  );
+}
+
+.feature-card.purple {
+  background: linear-gradient(
+    135deg,
+    rgba(129, 140, 248, 0.4),
+    rgba(30, 27, 75, 0.9)
+  );
+}
+
+.feature-card.cyan {
+  background: linear-gradient(
+    135deg,
+    rgba(56, 189, 248, 0.4),
+    rgba(12, 74, 78, 0.9)
+  );
+}
+
+/* ===== TEXT ===== */
+
+.feature-card h5 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: #f8fafc;
+}
+
+.feature-card p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #e2e8f0;
+}
+
+.feature-icon {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* MOBILE */
+@media (max-width: 576px) {
+  .features {
+    padding: 4.5rem 1.25rem;
+  }
+
+  .feature-card {
+    padding: 1.75rem;
+  }
+}
+/* ===============================
+   WORKFLOW SECTION
+   =============================== */
+.workflow {
+  padding: 6rem 1.5rem;
+}
+
+.workflow-header {
+  max-width: 700px;
+  margin: 0 auto 4rem;
+}
+
+.workflow-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.workflow-title {
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  font-weight: 800;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #e5e7eb, #9ca3af);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.workflow-subtitle {
+  color: #9ca3af;
+  font-size: 1rem;
+}
+
+/* STEPS GRID */
+.workflow-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+}
+
+/* CARD BASE */
+.workflow-card {
+  position: relative;
+  padding: 2.5rem 2rem;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.workflow-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 35px 80px rgba(0, 0, 0, 0.65);
+}
+
+/* STEP NUMBER */
+.step-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  color: #020617;
+}
+
+/* TEXT */
+.workflow-card h4 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: #e5e7eb;
+}
+
+.workflow-card p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #cbd5f5;
+  margin: 0;
+}
+
+/* ===============================
+   COLOR ACCENTS (NOT JUST BLUE)
+   =============================== */
+.accent-teal .step-badge {
+  background: #2dd4bf;
+}
+
+.accent-amber .step-badge {
+  background: #f59e0b;
+}
+
+.accent-violet .step-badge {
+  background: #a78bfa;
+}
+
+.accent-green .step-badge {
+  background: #22c55e;
+}
+
+/* subtle top glow */
+.accent-teal {
+  border-top: 3px solid rgba(45, 212, 191, 0.6);
+}
+
+.accent-amber {
+  border-top: 3px solid rgba(245, 158, 11, 0.6);
+}
+
+.accent-violet {
+  border-top: 3px solid rgba(167, 139, 250, 0.6);
+}
+
+.accent-green {
+  border-top: 3px solid rgba(34, 197, 94, 0.6);
+}
+
+/* ===============================
+   RESPONSIVE
+   =============================== */
+@media (max-width: 992px) {
+  .workflow-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .workflow {
+    padding: 4.5rem 1.25rem;
+  }
+
+  .workflow-steps {
+    grid-template-columns: 1fr;
+  }
+}
+/* WHY RETRIX SECTION */
+.why-retrix {
+  padding: 6rem 1.5rem;
+  text-align: center;
+}
+
+/* Section heading */
+.why-tag {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.85rem;
+  color: #7dd3fc;
+  margin-bottom: 0.5rem;
+}
+
+.why-title {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 800;
+  margin-bottom: 2.5rem;
+  background: linear-gradient(135deg, #e5e7eb, #9ca3af);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Cards */
+.why-card {
+  position: relative;
+  height: 100%;
+  padding: 2.5rem 2rem 2rem;
+  border-radius: 20px;
+  text-align: left;
+  background: linear-gradient(
+    180deg,
+    rgba(17, 24, 39, 0.95),
+    rgba(15, 23, 42, 0.95)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.why-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 35px 80px rgba(0, 0, 0, 0.75);
+}
+
+.why-card h4 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: #f8fafc;
+}
+
+.why-card p {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #cbd5f5;
+  margin: 0;
+}
+
+/* Icons */
+.why-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  margin-bottom: 1.2rem;
+}
+
+/* Icon colors */
+.why-icon.orange {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.why-icon.blue {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+}
+
+.why-icon.green {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.why-icon.teal {
+  background: rgba(45, 212, 191, 0.15);
+  color: #2dd4bf;
+}
+
+/* Accent borders */
+.accent-orange { border-left: 5px solid #f59e0b; }
+.accent-blue   { border-left: 5px solid #60a5fa; }
+.accent-green  { border-left: 5px solid #22c55e; }
+.accent-teal   { border-left: 5px solid #2dd4bf; }
+
+/* Mobile */
+@media (max-width: 576px) {
+  .why-retrix {
+    padding: 4.5rem 1.25rem;
+  }
+
+  .why-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .why-card p {
+    font-size: 0.9rem;
+  }
+}
+/* ===============================
+   FUTURE / FEATURES SECTION
+   =============================== */
+
+.future-section {
+  padding: 6rem 1.5rem;
+}
+
+.future-kicker {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.8rem;
+  color: #7dd3fc;
+  margin-bottom: 0.4rem;
+}
+
+.future-title {
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, #e5e7eb, #9ca3af);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.future-subtitle {
+  max-width: 700px;
+  margin: 0 auto 3rem;
+  color: #cbd5f5;
+  font-size: 1rem;
+}
+
+/* CARD BASE */
+.future-card {
+  height: 100%;
+  padding: 2.2rem 2rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.future-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+}
+
+.future-card h5 {
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: #f8fafc;
+}
+
+.future-card p {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: #cbd5f5;
+  margin: 0;
+}
+
+/* ICON */
+.future-icon {
+  font-size: 1.9rem;
+  margin-bottom: 1.2rem;
+}
+
+/* INDIVIDUAL CARD COLORS */
+.card-amber {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.card-teal {
+  background: linear-gradient(135deg, rgba(45, 212, 191, 0.15), rgba(45, 212, 191, 0.05));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(45, 212, 191, 0.2);
+}
+
+.card-blue {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.card-green {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.card-violet {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.05));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+/* ICON COLOR MATCH */
+.card-amber .future-icon { color: #fbbf24; }
+.card-teal .future-icon { color: #2dd4bf; }
+.card-blue .future-icon { color: #60a5fa; }
+.card-green .future-icon { color: #4ade80; }
+.card-violet .future-icon { color: #c084fc; }
+
+/* MOBILE */
+@media (max-width: 576px) {
+  .future-section {
+    padding: 4.5rem 1.25rem;
+  }
+}
+/* ===============================
+   TEAM SECTION
+   =============================== */
+.team-section {
+  padding: 6rem 1.5rem;
+}
+
+.team-kicker {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.8rem;
+  color: #93c5fd;
+  margin-bottom: 0.4rem;
+}
+
+.team-title {
+  font-size: clamp(1.9rem, 4vw, 2.4rem);
+  font-weight: 800;
+  color: #e5e7eb;
+  margin-bottom: 0.8rem;
+}
+
+.team-subtitle {
+  color: #9ca3af;
+  font-size: 0.95rem;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* ===============================
+   TEAM CARD BASE
+   =============================== */
+.team-card {
+  display: block;
+  text-decoration: none;
+  padding: 2.2rem 1.8rem;
+  border-radius: 18px;
+  text-align: center;
+  height: 100%;
+  transition: all 0.35s ease;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+}
+
+.team-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.5);
+}
+
+/* ===============================
+   AVATAR PLACEHOLDER
+   =============================== */
+.avatar-placeholder {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  margin: 0 auto 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ===============================
+   TEXT
+   =============================== */
+.team-name {
+  color: #f9fafb;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.team-role {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
+}
+
+/* ===============================
+   SOLID CARD COLORS
+   =============================== */
+.card-team-blue {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(37, 99, 235, 0.05));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.card-team-teal {
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.15), rgba(15, 118, 110, 0.05));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(15, 118, 110, 0.2);
+}
+
+.card-team-violet {
+  background: linear-gradient(135deg, rgba(109, 40, 217, 0.15), rgba(109, 40, 217, 0.05));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(109, 40, 217, 0.2);
+}
+
+/* ===============================
+   MOBILE
+   =============================== */
+@media (max-width: 576px) {
+  .team-section {
+    padding: 4.5rem 1.25rem;
+  }
+}
+
+  </style>
+</head>
+
+<body>
+
+{% include 'futuristic_background.html' %}
+
+<div class="content-wrapper" style="position: relative; z-index: 1;">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg">
+      <div class="container">
+          <a class="navbar-brand" href="/">RETRIX</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+              <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+              <ul class="navbar-nav align-items-center">
+                  <li class="nav-item">
+                      <a class="nav-link" href="/">Home</a>
+                  </li>
+                  <li class="nav-item">
+                      <a class="nav-link" href="/#features">Features</a>
+                  </li>
+                  <li class="nav-item">
+                      <a class="nav-link" href="/#how-it-works">How It Works</a>
+                  </li>
+                  <li class="nav-item">
+                      <a class="nav-link" href="/#about">About Us</a>
+                  </li>
+                  <li class="nav-item">
+                      <a class="nav-link" href="/#faqs">FAQs</a>
+                  </li>
+                  <li class="nav-item ms-3">
+                      <a href="/login-selection" class="btn btn-login">Login</a>
+                  </li>
+                  <li class="nav-item ms-2">
+                      <a href="/register" class="btn btn-signup">Sign Up</a>
+                  </li>
+              </ul>
+          </div>
+      </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          <span>Retrix</span>
+        </h1>
+
+        <h4 class="hero-subtitle">
+          Understand your Returns. Control your Profits.
+        </h4>
+
+        <p class="hero-support">
+          Retrix helps sellers uncover hidden return patterns, track performance at scale,
+          and make decisions that directly improve profitability.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOTTO -->
+  <section class="motto">
+    <div class="motto-content">
+      <p class="motto-head">Our Motto</p>
+      <h2 class="motto-why">Why Retrix?</h2>
+
+      <p class="motto-prob">
+        E-commerce sellers deal with growing order volumes, rising return rates, and shrinking margins —
+        yet most platforms do not clearly explain why these issues occur.
+        Important signals stay buried, patterns go unnoticed, and decisions are often driven by assumptions instead of clarity.
+      </p>
+
+      <div class="motto-solution-box">
+        <p class="motto-sol">
+          Retrix focuses on breaking down return behavior across products, categories, and time.
+          By exposing repeat causes, high-risk items, and operational gaps, sellers gain the clarity
+          needed to reduce returns and protect profitability.
+        </p>
+      </div>
+    </div>
+  </section>
+
+<!-- FEATURES SECTION -->
+<section class="features">
+  <div class="container">
+    <div class="features-header text-center">
+      <p class="features-label">What Retrix Offers</p>
+      <h2 class="features-title">Powerful Insights. Simple Decisions.</h2>
+    </div>
+
+    <div class="row g-4 mt-4">
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card blue">
+          <div class="feature-icon blue">
+            📈
+          </div>
+          <h5>Order Trend Analysis</h5>
+          <p>
+            Track order performance over time and spot fluctuations that impact revenue and growth.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card teal">
+          <div class="feature-icon teal">
+            🔁
+          </div>
+          <h5>Return Reason Breakdown</h5>
+          <p>
+            Understand why products are returned and identify the most frequent return drivers.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card purple">
+          <div class="feature-icon purple">
+            📦
+          </div>
+          <h5>SKU-Level Insights</h5>
+          <p>
+            Detect high-risk SKUs and focus on products that hurt profitability the most.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card green">
+          <div class="feature-icon green">
+            🧮
+          </div>
+          <h5>Return Cost Tracking</h5>
+          <p>
+            Measure the true cost of returns including logistics impact on net profit.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card orange">
+          <div class="feature-icon orange">
+            📊
+          </div>
+          <h5>Visual Dashboards</h5>
+          <p>
+            Interactive charts that convert raw numbers into instantly understandable insights.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card cyan">
+          <div class="feature-icon cyan">
+            ⚙️
+          </div>
+          <h5>Seller-Focused Design</h5>
+          <p>
+            Built specifically for e-commerce sellers — no unnecessary complexity or noise.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="workflow">
+  <div class="container">
+    <div class="workflow-header text-center">
+      <p class="workflow-eyebrow">Workflow</p>
+      <h2 class="workflow-title">How Retrix Works</h2>
+      <p class="workflow-subtitle">
+        From raw activity to actionable clarity — without complexity
+      </p>
+    </div>
+
+    <div class="workflow-steps">
+      <!-- Step 1 -->
+      <div class="workflow-card accent-teal">
+        <div class="step-badge">1</div>
+        <h4>Upload Your Data</h4>
+        <p>
+          Sellers start by uploading their order and return data to Retrix,
+          creating the foundation for deeper analysis.
+        </p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="workflow-card accent-amber">
+        <div class="step-badge">2</div>
+        <h4>Analyze Returns</h4>
+        <p>
+          Returns are broken down by reason, product, and timing to expose hidden patterns.
+        </p>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="workflow-card accent-violet">
+        <div class="step-badge">3</div>
+        <h4>Identify Risks</h4>
+        <p>
+          High-risk SKUs, repeat issues, and costly trends are automatically highlighted.
+        </p>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="workflow-card accent-green">
+        <div class="step-badge">4</div>
+        <h4>Take Action</h4>
+        <p>
+          Sellers use insights to reduce returns, improve listings, and protect margins.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY RETRIX SECTION -->
+<section class="why-retrix">
+  <div class="container">
+
+    <p class="why-tag">WHY RETRIX</p>
+    <h2 class="why-title">What Makes Us Different</h2>
+
+    <div class="row gy-4 mt-4">
+
+      <!-- Card 1 -->
+      <div class="col-md-6">
+        <div class="why-card accent-orange">
+          <div class="why-icon orange">
+            <i class="fas fa-users-gear"></i>
+          </div>
+          <h4>Manual Analysis Drains Time & Manpower</h4>
+          <p>
+            Traditional and physical workflows depend on spreadsheets and human effort.
+            This demands manpower, increases errors, and becomes unmanageable as order
+            volumes scale.
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="col-md-6">
+        <div class="why-card accent-blue">
+          <div class="why-icon blue">
+            <i class="fas fa-eye-slash"></i>
+          </div>
+          <h4>Platforms Show Numbers, Not Reasons</h4>
+          <p>
+            Most e-commerce platforms report return counts but hide the underlying causes.
+            Sellers see outcomes — not the reasons behind repeated losses.
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="col-md-6">
+        <div class="why-card accent-green">
+          <div class="why-icon green">
+            <i class="fas fa-boxes-stacked"></i>
+          </div>
+          <h4>Catalogue & SKU-Level Clarity</h4>
+          <p>
+            Retrix breaks down returns catalogue-wise and SKU-wise, exposing recurring
+            issues and identifying products that silently damage profitability.
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="col-md-6">
+        <div class="why-card accent-teal">
+          <div class="why-icon teal">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <h4>Clear Month-to-Month Comparisons</h4>
+          <p>
+            Compare performance between two months to track return trends, measure
+            improvements, and validate operational decisions with confidence.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="future-section">
+  <div class="container">
+
+    <div class="text-center mb-5">
+      <p class="future-kicker">What's Next</p>
+      <h2 class="future-title">Where Retrix Is Headed</h2>
+      <p class="future-subtitle">
+        Retrix is evolving beyond analytics into prediction, automation,
+        and intelligent decision-making.
+      </p>
+    </div>
+
+    <div class="row g-4">
+
+      <div class="col-md-6 col-lg-4">
+        <div class="future-card card-amber">
+          <div class="future-icon">📈</div>
+          <h5>Return Prediction</h5>
+          <p>
+            Forecast upcoming return counts and percentages before losses occur.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="future-card card-teal">
+          <div class="future-icon">🤖</div>
+          <h5>Sales Forecasting</h5>
+          <p>
+            Predict future sales trends using historical performance patterns.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="future-card card-blue">
+          <div class="future-icon">🔗</div>
+          <h5>Platform Integrations</h5>
+          <p>
+            Directly connect with e-commerce platforms — no manual uploads.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="future-card card-green">
+          <div class="future-icon">⚙️</div>
+          <h5>Automated Alerts</h5>
+          <p>
+            Get notified when return risks, costs, or anomalies spike.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="future-card card-violet">
+          <div class="future-icon">🧠</div>
+          <h5>Decision Intelligence</h5>
+          <p>
+            Clear guidance on what to fix, why it matters, and when to act.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="team-section">
+  <div class="container">
+
+    <div class="text-center mb-5">
+      <p class="team-kicker">The People Behind Retrix</p>
+      <h2 class="team-title">Our Team</h2>
+      <p class="team-subtitle">
+        A small, focused team building clarity for sellers.
+      </p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+
+      <!-- Team Member 1 -->
+      <div class="col-md-6 col-lg-4">
+        <a href="#" class="team-card card-team-blue">
+          <div class="avatar-placeholder">👤</div>
+          <h5 class="team-name">Name Placeholder</h5>
+          <p class="team-role">Role Placeholder</p>
+        </a>
+      </div>
+
+      <!-- Team Member 2 -->
+      <div class="col-md-6 col-lg-4">
+        <a href="#" class="team-card card-team-teal">
+          <div class="avatar-placeholder">👤</div>
+          <h5 class="team-name">Name Placeholder</h5>
+          <p class="team-role">Role Placeholder</p>
+        </a>
+      </div>
+
+      <!-- Team Member 3 -->
+      <div class="col-md-6 col-lg-4">
+        <a href="#" class="team-card card-team-violet">
+          <div class="avatar-placeholder">👤</div>
+          <h5 class="team-name">Name Placeholder</h5>
+          <p class="team-role">Role Placeholder</p>
+        </a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+</body>
+</html>

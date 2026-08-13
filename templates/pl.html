@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Retrix – Profit & Loss</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='uploads/favicon.png') }}">
+  <style>
+    :root {
+      --primary-subtle: #4facfe;
+      --secondary-subtle: #00f2fe;
+      --accent-subtle: #0f3460;
+      --card-bg: rgba(79, 172, 254, 0.08);
+      --card-border: rgba(79, 172, 254, 0.18);
+      --sidebar-width: 260px;
+      --sidebar-collapsed: 70px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #e5e7eb;
+      overflow-x: hidden;
+      margin: 0;
+    }
+    
+    /* ========== SIDEBAR STYLES ========== */
+    .sidebar {
+      width: var(--sidebar-width);
+      min-height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+      box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+    .sidebar.collapsed {
+      width: var(--sidebar-collapsed);
+    }
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .sidebar-overlay.active {
+      display: block;
+      opacity: 1;
+    }
+    .sidebar-top-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sidebar-brand h4 {
+      color: #fff;
+      font-weight: 600;
+      letter-spacing: 2px;
+      margin: 0;
+      white-space: nowrap;
+    }
+    .sidebar-brand i {
+      color: var(--primary-subtle);
+      font-size: 1.4rem;
+    }
+    .menu-toggle {
+      background: rgba(79, 172, 254, 0.3);
+      border: none;
+      color: #fff;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .menu-toggle:hover {
+      background: rgba(79, 172, 254, 0.5);
+    }
+    .sidebar.collapsed .sidebar-brand h4,
+    .sidebar.collapsed .nav-text,
+    .sidebar.collapsed .nav-indicator {
+      display: none;
+    }
+    .sidebar.collapsed .sidebar-top-actions {
+      justify-content: center;
+      padding: 20px 10px;
+    }
+    .sidebar.collapsed .menu-toggle {
+      position: static;
+      transform: none;
+    }
+    .sidebar.collapsed a {
+      justify-content: center;
+      padding: 14px;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .sidebar.collapsed a i {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+    .sidebar a {
+      color: rgba(255,255,255,0.75);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      border-radius: 8px;
+      margin: 4px 10px;
+      transition: all 0.3s ease;
+      border-left: 3px solid transparent;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      background: rgba(79,172,254,0.18);
+      color: #ffffff;
+      border-left-color: var(--accent-subtle);
+      transform: translateX(5px);
+    }
+    .sidebar a i { width: 20px; text-align: center; font-size: 1.1rem; }
+    .nav-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary-subtle);
+      margin-left: auto;
+      transition: all 0.3s ease;
+    }
+    .sidebar a:hover .nav-indicator {
+      background: var(--secondary-subtle);
+      box-shadow: 0 0 10px var(--secondary-subtle);
+    }
+    .nav-text {
+      flex: 1;
+      white-space: nowrap;
+    }
+    .logout-btn-bottom {
+      margin-top: auto;
+      margin: 10px;
+      background: rgba(245,101,101,0.15);
+      border: 1px solid rgba(245,101,101,0.25);
+      color: #fc8181;
+      border-radius: 8px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    .logout-btn-bottom:hover {
+      background: rgba(245, 101, 101, 0.3);
+      color: #f56565;
+    }
+    .sidebar.collapsed .logout-btn-bottom {
+      justify-content: center;
+      padding: 12px;
+    }
+    .sidebar.collapsed .logout-btn-bottom span {
+      display: none;
+    }
+    
+    /* ========== MAIN CONTENT ========== */
+    .main-content {
+      margin-left: var(--sidebar-width);
+      padding: 30px;
+      transition: margin-left 0.3s ease;
+      min-height: 100vh;
+    }
+    .sidebar.collapsed ~ .main-content {
+      margin-left: var(--sidebar-collapsed);
+    }
+    
+    /* ========== RESPONSIVE DESIGN ========== */
+    @media (max-width: 992px) {
+      .sidebar {
+        transform: translateX(-100%);
+        width: var(--sidebar-width);
+      }
+      .sidebar.mobile-open {
+        transform: translateX(0);
+      }
+      .sidebar.collapsed {
+        width: var(--sidebar-width);
+      }
+      .sidebar.collapsed ~ .main-content {
+        margin-left: 0;
+      }
+      .main-content {
+        margin-left: 0;
+        padding: 80px 20px 30px;
+      }
+      .sidebar.mobile-open ~ .main-content {
+        margin-left: 0;
+      }
+    }
+    
+    /* Mobile Toggle Button */
+    .mobile-toggle {
+      display: none;
+      position: fixed;
+      left: 15px;
+      top: 15px;
+      z-index: 1001;
+      background: rgba(79, 172, 254, 0.3);
+      border: none;
+      color: #fff;
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    .mobile-toggle:hover {
+      background: rgba(79, 172, 254, 0.5);
+      transform: scale(1.05);
+    }
+    
+    /* Mobile Navigation Container */
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      left: 15px;
+      top: 18px;
+      z-index: 1000;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mobile-nav-btn {
+      width: 42px;
+      height: 42px;
+      background: rgba(79, 172, 254, 0.3);
+      border: none;
+      color: #fff;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+    .mobile-nav-btn:hover, .mobile-nav-btn.active {
+      background: rgba(79, 172, 254, 0.6);
+      transform: scale(1.05);
+    }
+    
+    @media (max-width: 992px) {
+      .mobile-nav {
+        display: flex;
+      }
+      .mobile-toggle {
+        display: none !important;
+      }
+      .main-content {
+        margin-left: 0;
+        padding: 20px 20px 20px 75px;
+      }
+    }
+    
+    @media (max-width: 576px) {
+      .mobile-toggle {
+        display: flex;
+      }
+    }
+    
+    @media (max-width: 576px) {
+      .main-content {
+        padding: 80px 12px 20px;
+      }
+    }
+    
+    /* Card Animation */
+    .pl-glass-card {
+      position: relative;
+      height: 100%;
+      padding: 24px;
+      border-radius: 12px;
+      background: rgba(79, 172, 254, 0.1);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      text-align: center;
+      opacity: 0;
+      transform: translateY(30px);
+      animation: card-appear 0.6s ease forwards;
+    }
+    
+    @keyframes card-appear {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .pl-glass-card:nth-child(1) { animation-delay: 0.1s; }
+    .pl-glass-card:nth-child(2) { animation-delay: 0.2s; }
+    .pl-glass-card:nth-child(3) { animation-delay: 0.3s; }
+    .pl-glass-card:nth-child(4) { animation-delay: 0.4s; }
+    .pl-glass-card:nth-child(5) { animation-delay: 0.5s; }
+    .pl-glass-card:nth-child(6) { animation-delay: 0.6s; }
+    .pl-glass-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(79, 172, 254, 0.3);
+    }
+    
+    .pl-glass-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+    }
+    .accent-green::before { background: linear-gradient(90deg, #48bb78, #68d391); }
+    .accent-red::before { background: linear-gradient(90deg, #f56565, #fc8181); }
+    .accent-blue::before { background: linear-gradient(90deg, #4facfe, #00f2fe); }
+    .accent-purple::before { background: linear-gradient(90deg, #667eea, #7f9cf5); }
+    .pl-card-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .pl-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+    .pl-kicker {
+      font-size: 0.75rem;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+    }
+    .pl-glass-card h3 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin: 0;
+      color: #ffffff;
+    }
+    .pl-metric {
+      font-size: 1rem;
+      color: rgba(226,232,240,0.85);
+    }
+    .card-custom {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+    }
+    .category-select-box {
+      background: rgba(79,172,254,0.08);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 18px 22px;
+    }
+    .select-label {
+      font-size: 0.85rem;
+      color: #93c5fd;
+      margin-bottom: 10px;
+    }
+    .category-select {
+      width: 100%;
+      background: rgba(15,23,42,0.8);
+      border: 1px solid rgba(79,172,254,0.25);
+      color: #e5e7eb;
+      padding: 12px 14px;
+      border-radius: 8px;
+    }
+    .deep-chart-box {
+      background: rgba(79,172,254,0.08);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+    .deep-chart-title {
+      font-size: 0.9rem;
+      color: #93c5fd;
+      margin-bottom: 12px;
+    }
+    .insight-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .insight-row {
+      position: relative;
+      padding: 18px 22px;
+      font-size: 0.96rem;
+      line-height: 1.6;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 4px;
+      color: rgba(226,232,240,0.92);
+    }
+    .insight-row::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 5px;
+      height: 100%;
+    }
+    .insight-row.tone-1::before { background: #4facfe; }
+    .insight-row.tone-2::before { background: #00f2fe; }
+    .insight-row.tone-3::before { background: #667eea; }
+    .insight-row.tone-4::before { background: #8a2be2; }
+    .insight-row strong { color: #ffffff; font-weight: 600; }
+    .section-header h4 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+    }
+    .section-header h4 i { color: var(--primary-subtle); }
+    .section-subtitle {
+      max-width: 720px;
+      margin-top: 6px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: rgba(226, 232, 240, 0.65);
+    }
+    .overall-insight-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .overall-insight-row {
+      position: relative;
+      padding: 18px 22px;
+      font-size: 0.96rem;
+      line-height: 1.6;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 4px;
+      color: rgba(226,232,240,0.92);
+    }
+    .overall-insight-row::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 5px;
+      height: 100%;
+    }
+    .overall-insight-row.tone-1::before { background: #4facfe; }
+    .overall-insight-row.tone-2::before { background: #00f2fe; }
+    .overall-insight-row.tone-3::before { background: #667eea; }
+    .overall-insight-row.tone-4::before { background: #8a2be2; }
+    .overall-insight-row strong { color: #ffffff; font-weight: 600; }
+    .solution-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .solution-row {
+      position: relative;
+      padding: 18px 22px;
+      font-size: 0.96rem;
+      line-height: 1.65;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(79, 172, 254, 0.18);
+      border-radius: 6px;
+      color: rgba(226, 232, 240, 0.92);
+    }
+    .solution-row::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 5px;
+      height: 100%;
+    }
+    .solution-blue::before { background: linear-gradient(180deg, #4facfe, #00f2fe); }
+    .solution-purple::before { background: linear-gradient(180deg, #667eea, #764ba2); }
+    .solution-teal::before { background: linear-gradient(180deg, #38bdf8, #22d3ee); }
+    .solution-green::before { background: linear-gradient(180deg, #48bb78, #2f855a); }
+    .solution-row strong { color: #ffffff; font-weight: 600; }
+    
+    /* Mobile Navigation Container */
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      left: 15px;
+      top: 18px;
+      z-index: 1000;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mobile-nav-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: rgba(79, 172, 254, 0.3);
+      border: none;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1.2rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      text-decoration: none;
+    }
+    .mobile-nav-btn:hover {
+      background: rgba(79, 172, 254, 0.5);
+      transform: scale(1.05);
+    }
+    .mobile-nav-btn.active {
+      background: linear-gradient(135deg, #4facfe 0%, #8a2be2 100%);
+    }
+    .history-section {
+      background: rgba(79, 172, 254, 0.08);
+      border: 1px solid rgba(79, 172, 254, 0.18);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .history-header {
+      cursor: pointer;
+    }
+    .history-header h5 {
+      color: #fff;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .history-dropdown {
+      display: none;
+      margin-top: 15px;
+    }
+    .toggle-icon {
+      transition: transform 0.3s ease;
+    }
+    @media (max-width: 992px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.show { transform: translateX(0); }
+      .main-content { margin-left: 0; padding: 20px 20px 20px 75px; }
+      .mobile-nav { display: flex !important; }
+      .header-section { padding-left: 60px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Mobile Navigation with Hamburger and Quick Icons -->
+  <div class="mobile-nav">
+    <button class="mobile-nav-btn" onclick="toggleSidebar()" title="Menu">
+      <i class="fas fa-bars"></i>
+    </button>
+    <a href="/seller-dashboard" class="mobile-nav-btn" title="Dashboard">
+      <i class="fas fa-home"></i>
+    </a>
+    <a href="/catalogue" class="mobile-nav-btn" title="Catalogue">
+      <i class="fas fa-book"></i>
+    </a>
+    <a href="/sku-analysis" class="mobile-nav-btn" title="SKU Analysis">
+      <i class="fas fa-barcode"></i>
+    </a>
+    <a href="/seller-comparison" class="mobile-nav-btn" title="Comparison">
+      <i class="fas fa-columns"></i>
+    </a>
+    <a href="/pl" class="mobile-nav-btn active" title="Profit & Loss">
+      <i class="fas fa-chart-pie"></i>
+    </a>
+    <a href="/seller-settings" class="mobile-nav-btn" title="Settings">
+      <i class="fas fa-cog"></i>
+    </a>
+  </div>
+  
+  <script>
+    // Scroll Animation Observer
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const scrollObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, observerOptions);
+    
+    document.querySelectorAll('.scroll-fade, .scroll-scale').forEach(el => {
+      scrollObserver.observe(el);
+    });
+    
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.querySelector('.sidebar-overlay');
+      
+      if (window.innerWidth <= 992) {
+        sidebar.classList.toggle('mobile-open');
+        overlay.classList.toggle('active');
+      } else {
+        sidebar.classList.toggle('collapsed');
+      }
+    }
+    
+    function closeSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.querySelector('.sidebar-overlay');
+      sidebar.classList.remove('mobile-open');
+      overlay.classList.remove('active');
+    }
+    
+    window.addEventListener('resize', function() {
+      if (window.innerWidth > 992) {
+        closeSidebar();
+      }
+    });
+    
+    function toggleHistoryDropdown() {
+      const dropdown = document.getElementById('historyDropdown');
+      const icon = document.getElementById('historyToggleIcon');
+      if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+        dropdown.style.display = 'block';
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        dropdown.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+      }
+    }
+    function selectCSV(uploadId) {
+      window.location.href = '/pl?upload_id=' + uploadId;
+    }
+  </script>
+  
+  <!-- Mobile Toggle Button -->
+  <button class="mobile-toggle" onclick="toggleSidebar()">
+    <i class="fas fa-bars"></i>
+  </button>
+  
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  
+  <!-- Sidebar -->
+  <div class="sidebar pt-4" id="sidebar">
+    <div class="sidebar-top-actions">
+      <div class="sidebar-brand">
+        <i class="fas fa-cube"></i>
+        <h4>Retrix</h4>
+      </div>
+      <button class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+    <a href="/seller-dashboard"><i class="fas fa-home"></i><span class="nav-text">Dashboard</span><div class="nav-indicator"></div></a>
+    <a href="/catalogue"><i class="fas fa-book"></i><span class="nav-text">Catalogue</span><div class="nav-indicator"></div></a>
+    <a href="/sku-analysis"><i class="fas fa-barcode"></i><span class="nav-text">SKU Analysis</span><div class="nav-indicator"></div></a>
+    <a href="/seller-comparison"><i class="fas fa-columns"></i><span class="nav-text">Comparison</span><div class="nav-indicator"></div></a>
+    <a class="active" href="/pl"><i class="fas fa-chart-pie"></i><span class="nav-text">Profit & Loss</span><div class="nav-indicator"></div></a>
+    <a href="/seller-settings"><i class="fas fa-cog"></i><span class="nav-text">Settings</span><div class="nav-indicator"></div></a>
+    <a href="/seller-logout" class="logout-btn-bottom">
+      <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+    </a>
+  </div>
+  
+  <div class="main-content">
+    <div class="header-section mb-4" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 30px;">
+      <div>
+        <h1 class="section-title mb-0">Profit & Loss</h1>
+      </div>
+      {% if selected_upload %}
+      <span class="csv-file-indicator" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+        <i class="fas fa-file-csv" style="color: #4facfe; margin-right: 8px;"></i>
+        <span class="csv-file-name" title="{{ selected_upload.original_name }}" style="color: var(--primary-subtle); font-weight: 500;">
+          {{ selected_upload.original_name }}
+        </span>
+      </span>
+      {% elif uploads %}
+      <span class="csv-file-indicator" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+        <span style="color: var(--primary-subtle); font-weight: 500;">Select a file from Upload History</span>
+      </span>
+      {% else %}
+      <span class="csv-file-indicator" style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">
+        <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
+        No CSV files uploaded
+      </span>
+      {% endif %}
+    </div>
+    <div class="history-section mb-4">
+      <div class="history-header" onclick="toggleHistoryDropdown()">
+        <h5>
+          <i class="fas fa-history"></i>
+          Upload History
+          <i class="fas fa-chevron-down toggle-icon" id="historyToggleIcon"></i>
+        </h5>
+      </div>
+      <div class="history-dropdown" id="historyDropdown">
+        {% if uploads %}
+        <div style="max-height: 250px; overflow-y: auto; background: rgba(15,23,42,0.5); border-radius: 8px; padding: 10px; margin-top: 15px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            {% for upload in uploads %}
+            <tr onclick="selectCSV('{{ upload.id }}')" style="cursor: pointer;{% if selected_upload and selected_upload.id == upload.id %} background: rgba(34, 197, 94, 0.2);{% endif %}">
+              <td style="padding: 14px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <i class="fas fa-file-csv" style="color: #4facfe; margin-right: 10px;"></i>
+                <span style="color: #e5e7eb; font-size: 0.9rem;">{{ upload.original_name }}</span>
+              </td>
+              <td style="padding: 14px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); text-align: right;">
+                <span style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">{{ upload.upload_date }}</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </table>
+        </div>
+        {% else %}
+        <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem; margin-top: 10px;">No previous uploads found.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% if data %}
+    <div class="card-custom mb-4 p-3">
+      <h5><i class="fas fa-layer-group me-2"></i> Orders by Category</h5>
+      <div style="height: 360px;">
+        <canvas id="categoryBarChart"></canvas>
+      </div>
+    </div>
+    <div class="row g-4 mb-5">
+      <div class="col-sm-6 col-lg-3">
+        <div class="pl-glass-card accent-green">
+          <div class="pl-card-body">
+            <div class="pl-icon">⬆</div>
+            <p class="pl-kicker">Most Orders</p>
+            <h3>{{ data.cards.most_orders.category }}</h3>
+            <span class="pl-metric">{{ data.cards.most_orders.value }} Orders</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="pl-glass-card accent-red" title="Returns: {{ data.cards.most_returns.returns }} / {{ data.cards.most_returns.orders }}">
+          <div class="pl-card-body">
+            <div class="pl-icon">⚠</div>
+            <p class="pl-kicker">Most Returns</p>
+            <h3>{{ data.cards.most_returns.category }}</h3>
+            <span class="pl-metric">{{ data.cards.most_returns.return_pct }}% Return Rate</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="pl-glass-card accent-blue">
+          <div class="pl-card-body">
+            <div class="pl-icon">₹</div>
+            <p class="pl-kicker">Most Revenue</p>
+            <h3>{{ data.cards.most_revenue.category }}</h3>
+            <span class="pl-metric">₹{{ data.cards.most_revenue.value }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="pl-glass-card accent-purple">
+          <div class="pl-card-body">
+            <div class="pl-icon">✔</div>
+            <p class="pl-kicker">Most Profit</p>
+            <h3>{{ data.cards.most_profit.category }}</h3>
+            <span class="pl-metric">₹{{ data.cards.most_profit.value }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-custom mb-5">
+      <div class="p-3 border-bottom" style="border-color: rgba(255,255,255,0.1);">
+        <h5 class="mb-0"><i class="fas fa-undo-alt me-2"></i> Return Cost by Reason</h5>
+      </div>
+      <div class="card-body">
+        {% if data.return_reason_labels|length > 0 %}
+        <div style="height: 380px;">
+          <canvas id="returnCostPieChart"></canvas>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">No return cost data available</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="category-select-box mb-5">
+      <div class="select-label">
+        <i class="fas fa-filter me-2"></i>
+        Select Category for Deep Analysis
+      </div>
+      <select id="categorySelect" class="category-select">
+        <option disabled selected>Select category</option>
+        {% for cat in data.category_analysis.keys() %}
+        <option value="{{ cat }}">{{ cat }}</option>
+        {% endfor %}
+      </select>
+      <div id="categoryBox" style="display: none;">
+        <h6 class="mb-4" style="color: #38bdf8;"><i class="fas fa-chart-line me-2"></i> Deep Analysis: <span id="selectedCategory"></span></h6>
+        <div class="row g-4 mb-4">
+          <div class="col-md-7">
+            <div class="deep-chart-box">
+              <h6 class="deep-chart-title"><i class="fas fa-chart-line me-2"></i> Revenue Trend</h6>
+              <div style="height: 300px;">
+                <canvas id="categoryTrendChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-5">
+            <div class="deep-chart-box">
+              <h6 class="deep-chart-title"><i class="fas fa-undo-alt me-2"></i> Return Reasons</h6>
+              <div style="height: 300px;">
+                <canvas id="categoryReturnPie"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="insight-wrapper mt-4" id="categoryInsights"></div>
+      </div>
+    </div>
+    <div class="overall-insight-section mt-5">
+      <h5 class="mb-3"><i class="fas fa-lightbulb me-2"></i> Business Performance Insights</h5>
+      <div class="overall-insight-wrapper">
+        <div class="overall-insight-row tone-1">
+          Your business generated <strong>₹{{ data.overall_insights.total_sales }}</strong> in total sales, out of which <strong>₹{{ data.overall_insights.total_return_cost }}</strong> was lost due to returns, directly reducing net revenue.
+        </div>
+        <div class="overall-insight-row tone-2">
+          Returns currently consume <strong>{{ data.overall_insights.return_pct }}%</strong> of your gross sales, indicating a sustained profitability drag.
+        </div>
+        <div class="overall-insight-row tone-3">
+          The highest return cost is driven by <strong>{{ data.overall_insights.top_return_reason }}</strong>, resulting in a loss of <strong>₹{{ data.overall_insights.top_return_reason_cost }}</strong>.
+        </div>
+        <div class="overall-insight-row tone-4">
+          This single return reason contributes <strong>{{ data.overall_insights.top_return_reason_pct }}%</strong> of the total return cost, making it the largest monetary risk.
+        </div>
+        <div class="overall-insight-row tone-1">
+          The catalogue <strong>{{ data.overall_insights.top_sales_catalogue }}</strong> generates the highest sales across your store.
+        </div>
+        <div class="overall-insight-row tone-2">
+          The catalogue <strong>{{ data.overall_insights.top_returns_catalogue }}</strong> reports the highest returns and operational losses.
+        </div>
+        <div class="overall-insight-row tone-3">
+          The SKU <strong>{{ data.overall_insights.top_sales_sku }}</strong> is your highest selling product.
+        </div>
+        <div class="overall-insight-row tone-4">
+          The SKU <strong>{{ data.overall_insights.top_returns_sku }}</strong> records the highest number of returns.
+        </div>
+      </div>
+    </div>
+    <div class="section-header mt-5 mb-4">
+      <h4><i class="fas fa-lightbulb me-2"></i> Strategic Actions to Reduce Losses & Scale Revenue</h4>
+      <p class="section-subtitle">Based on where money is leaking and which products drive results, here's where you should act immediately to protect margins and unlock growth.</p>
+    </div>
+    <div class="solution-wrapper mt-4">
+      <div class="solution-row solution-blue">
+        Your highest return cost is driven by <strong>{{ data.overall_insights.top_return_reason }}</strong>. To reduce losses, tighten packaging standards, audit logistics partners, and add clearer handling instructions at the fulfilment level.
+      </div>
+      <div class="solution-row solution-purple">
+        Returns currently consume <strong>{{ data.overall_insights.return_pct }}%</strong> of your gross sales. Prioritize fixing return-heavy SKUs before scaling ad spend to protect margins.
+      </div>
+      <div class="solution-row solution-teal">
+        The catalogue <strong>{{ data.overall_insights.top_returns_catalogue }}</strong> reports the highest operational losses. Consider revisiting product descriptions, sizing charts, and customer expectations for this catalogue.
+      </div>
+      <div class="solution-row solution-green">
+        Your least-performing category should be supported with targeted ads and controlled discounts, while high-performing categories deserve inventory expansion and stronger visibility.
+      </div>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 80px 20px; color: rgba(255,255,255,0.5);">
+      <i class="fas fa-folder-open" style="font-size: 4rem; color: rgba(79,172,254,0.3); margin-bottom: 20px;"></i>
+      <h3 style="color: rgba(255,255,255,0.7); margin-bottom: 10px;">No Data Available</h3>
+      <p>Upload a CSV file to view your Profit & Loss analysis</p>
+    </div>
+    {% endif %}
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script>
+    Chart.register(ChartDataLabels);
+    function toggleHistoryDropdown() {
+      var dropdown = document.getElementById('historyDropdown');
+      var icon = document.getElementById('historyToggleIcon');
+      if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+        dropdown.style.display = 'block';
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        dropdown.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+      }
+    }
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const isMobile = window.innerWidth <= 992;
+      
+      if (isMobile) {
+        sidebar.classList.toggle('show');
+        // Toggle hamburger to X
+        const toggleBtn = document.querySelector('.mobile-nav-btn');
+        const menuIcon = toggleBtn ? toggleBtn.querySelector('i') : null;
+        if (menuIcon) {
+          if (sidebar.classList.contains('show')) {
+            menuIcon.classList.remove('fa-bars');
+            menuIcon.classList.add('fa-times');
+          } else {
+            menuIcon.classList.remove('fa-times');
+            menuIcon.classList.add('fa-bars');
+          }
+        }
+      } else {
+        sidebar.classList.toggle('collapsed');
+      }
+    }
+    function selectCSV(uploadId) {
+      window.location.href = '/pl/view/' + uploadId;
+    }
+    var categoryCanvas = document.getElementById("categoryBarChart");
+    if (categoryCanvas) {
+      var labels = {{ data.category_labels | tojson }};
+      var values = {{ data.category_values | tojson }};
+      new Chart(categoryCanvas, {
+        type: "bar",
+        data: { labels: labels, datasets: [{ data: values, backgroundColor: "rgba(94, 234, 212, 0.75)", borderRadius: 8, borderSkipped: false }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, datalabels: { display: false } },
+          scales: {
+            x: { ticks: { color: "rgba(226,232,240,0.85)" }, grid: { display: true, color: "rgba(255,255,255,0.06)", drawBorder: false } },
+            y: { beginAtZero: true, ticks: { color: "rgba(226,232,240,0.85)" }, grid: { display: true, color: "rgba(255,255,255,0.08)", drawBorder: false } }
+          }
+        }
+      });
+    }
+    var pieCanvas = document.getElementById("returnCostPieChart");
+    var returnReasonLabels = {{ data.return_reason_labels | tojson }};
+    var returnReasonCosts = {{ data.return_reason_costs | tojson }};
+    if (pieCanvas && returnReasonLabels.length > 0) {
+      var totalReturnCost = returnReasonCosts.reduce(function(a,b){return a+b;}, 0);
+      new Chart(pieCanvas, {
+        type: "doughnut",
+        data: { labels: returnReasonLabels, datasets: [{ data: returnReasonCosts, backgroundColor: ["rgba(239,68,68,0.85)", "rgba(249,115,22,0.85)", "rgba(234,179,8,0.85)", "rgba(59,130,246,0.85)", "rgba(168,85,247,0.85)"], borderWidth: 2, borderColor: "rgba(15,15,35,0.8)" }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "60%",
+          plugins: {
+            legend: { position: "bottom", labels: { color: "#e5e7eb" } },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  var pct = ((ctx.raw / totalReturnCost) * 100).toFixed(1);
+                  return ctx.label + ': ₹' + ctx.raw + ' (' + pct + '%)';
+                }
+              }
+            },
+            datalabels: {
+              color: "#fff",
+              font: { weight: "600", size: 12 },
+              formatter: function(value) {
+                var pct = (value / totalReturnCost) * 100;
+                return pct >= 5 ? pct.toFixed(1) + "%" : "";
+              }
+            }
+          }
+        }
+      });
+    }
+    var deepData = {{ data.category_analysis | tojson }};
+    var trendChart = null;
+    var returnPie = null;
+    document.getElementById("categorySelect").onchange = function() {
+      var category = this.value;
+      var d = deepData[category];
+      if (!d) return;
+      var m = d.metrics;
+      document.getElementById("categoryBox").style.display = "block";
+      document.getElementById("selectedCategory").innerText = category;
+      if (trendChart) trendChart.destroy();
+      trendChart = new Chart(document.getElementById("categoryTrendChart"), {
+        type: "line",
+        data: { labels: d.trend.dates.map(function(x){ return x.split("-")[2]; }), datasets: [{ data: d.trend.revenue, borderColor: "rgba(56,178,172,0.9)", backgroundColor: "rgba(56,178,172,0.15)", fill: true, tension: 0.35, pointRadius: 5, pointHoverRadius: 8 }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, datalabels: { display: false }, tooltip: { callbacks: { label: function(ctx){ return 'Revenue: ₹' + ctx.raw; }, afterLabel: function(ctx){ return 'Orders: ' + d.trend.orders[ctx.dataIndex]; } } } },
+          scales: { x: { ticks: { color: "#e5e7eb" } }, y: { ticks: { color: "#e5e7eb" } } }
+        }
+      });
+      if (returnPie) returnPie.destroy();
+      if (d.returns.labels.length > 0) {
+        var total = d.returns.values.reduce(function(a,b){return a+b;}, 0);
+        returnPie = new Chart(document.getElementById("categoryReturnPie"), {
+          type: "doughnut",
+          data: { labels: d.returns.labels, datasets: [{ data: d.returns.values, backgroundColor: ["#ef4444", "#f97316", "#eab308", "#3b82f6", "#a855f7"], borderWidth: 2, borderColor: "rgba(15,15,35,0.85)" }] },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "60%",
+            plugins: {
+              legend: { position: "bottom", labels: { color: "#e5e7eb" } },
+              datalabels: { color: "#fff", formatter: function(v){ var pct = (v/total)*100; return pct >= 5 ? pct.toFixed(1)+"%" : ""; } },
+              tooltip: { callbacks: { label: function(ctx){ var pct = ((ctx.raw/total)*100).toFixed(1); return ctx.label + ': ' + ctx.raw + ' (' + pct + '%)'; } } }
+            }
+          }
+        });
+      }
+      var categoryName = category.endsWith("s") ? category + "'" : category + "'s";
+      document.getElementById("categoryInsights").innerHTML = '<div class="insight-row tone-1">📦 <strong>' + categoryName + '</strong> orders account for <strong>' + m.cat_orders + '</strong> orders out of <strong>' + m.total_orders + '</strong> total orders across your store.</div><div class="insight-row tone-2">💰 <strong>' + categoryName + '</strong> sales contributed <strong>₹' + m.cat_sales + '</strong> out of <strong>₹' + m.total_sales + '</strong> in overall revenue.</div><div class="insight-row tone-3">↩️ From <strong>' + categoryName + '</strong>, <strong>' + m.cat_returns + '</strong> orders were returned out of <strong>' + m.cat_orders + '</strong> total orders.</div><div class="insight-row tone-4">📉 The most common return reason for <strong>' + categoryName + '</strong> is <strong>' + m.major_return_reason + '</strong>.</div><div class="insight-row tone-4">💸 Returns from <strong>' + categoryName + '</strong> resulted in a total cost of <strong>₹' + m.cat_return_cost + '</strong>.</div><div class="insight-row tone-1">📊 <strong>' + categoryName + '</strong> contributes <strong>' + m.return_cost_pct + '%</strong> of your total return cost.</div>';
+    };
+  </script>
+{% include 'pdf_download_btn.html' %}
+</body>
+</html>

@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retrix - Catalogue Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='uploads/favicon.png') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-subtle: #4facfe;
+            --secondary-subtle: #00f2fe;
+            --accent-subtle: #0f3460;
+            --card-bg: rgba(79, 172, 254, 0.08);
+            --card-border: rgba(79, 172, 254, 0.18);
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        
+        /* ========== SIDEBAR STYLES ========== */
+        .sidebar {
+            min-height: 100vh;
+            width: 260px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar.collapsed {
+            width: 70px;
+        }
+        .sidebar.collapsed ~ .main-content {
+            margin-left: 70px;
+        }
+        .sidebar.collapsed .sidebar-brand {
+            padding: 20px 10px;
+        }
+        .sidebar.collapsed .sidebar-brand h4 { font-size: 0; }
+        .sidebar.collapsed .sidebar-brand h4 i { margin-right: 0; }
+        .sidebar.collapsed .nav-indicator { display: none; }
+        .sidebar.collapsed .menu-toggle {
+            right: 50%;
+            transform: translateX(50%);
+        }
+        .sidebar.collapsed a:not(.logout-btn-bottom) {
+            justify-content: flex-start;
+            padding: 14px 10px;
+            margin: 4px 8px;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .sidebar.collapsed a:not(.logout-btn-bottom) i {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        .sidebar.collapsed .sidebar-link-text {
+            display: block;
+            font-size: 0.65rem;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+        .sidebar-top-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .sidebar-brand {
+            padding: 0;
+        }
+        .sidebar-brand h4 {
+            color: #fff;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+        .menu-toggle {
+            background: rgba(79, 172, 254, 0.3);
+            border: none;
+            color: #fff;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .menu-toggle:hover {
+            background: rgba(79, 172, 254, 0.5);
+        }
+        .sidebar a {
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 3px solid transparent;
+            margin: 4px 10px;
+            border-radius: 8px;
+            gap: 12px;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: linear-gradient(90deg, rgba(79, 172, 254, 0.2) 0%, transparent 100%);
+            color: #fff;
+            border-left-color: var(--accent-subtle);
+            transform: translateX(5px);
+        }
+        .sidebar a i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        .nav-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary-subtle);
+            margin-left: auto;
+            transition: all 0.3s ease;
+        }
+        .sidebar a:hover .nav-indicator {
+            background: var(--accent-subtle);
+            box-shadow: 0 0 10px var(--accent-subtle);
+        }
+        .sidebar-link-text {
+            flex: 1;
+            white-space: nowrap;
+        }
+        .logout-btn-bottom {
+            margin-top: auto;
+            background: rgba(245, 101, 101, 0.2);
+            border: 1px solid rgba(245, 101, 101, 0.3);
+            color: #fc8181;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .logout-btn-bottom:hover {
+            background: rgba(245, 101, 101, 0.3);
+            color: #f56565;
+        }
+        
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            margin-left: 260px;
+            padding: 30px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+        }
+        
+        /* ========== RESPONSIVE DESIGN ========== */
+        @media (max-width: 991px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .sidebar.show ~ .main-content-overlay {
+                position: fixed;
+            }
+            .sidebar-overlay {
+                display: none;
+            }
+            .sidebar-overlay.show {
+                display: block;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .mobile-toggle {
+                display: flex !important;
+            }
+        }
+        
+        /* Mobile Toggle Button */
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            left: 15px;
+            top: 15px;
+            z-index: 1001;
+            background: rgba(79, 172, 254, 0.3);
+            border: none;
+            color: #fff;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        .mobile-toggle:hover {
+            background: rgba(79, 172, 254, 0.5);
+            transform: scale(1.05);
+        }
+        
+        /* Mobile Navigation Container */
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            left: 15px;
+            top: 18px;
+            z-index: 1000;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .mobile-nav-btn {
+            width: 42px;
+            height: 42px;
+            background: rgba(79, 172, 254, 0.3);
+            border: none;
+            color: #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .mobile-nav-btn:hover, .mobile-nav-btn.active {
+            background: rgba(79, 172, 254, 0.6);
+            transform: scale(1.05);
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-nav {
+                display: flex;
+            }
+            .mobile-toggle {
+                display: none !important;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 20px 20px 20px 75px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 80px 12px 20px;
+            }
+        }
+        
+        /* Scroll Animations */
+        .scroll-fade {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease-out;
+        }
+        
+        .scroll-fade.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .scroll-scale {
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.6s ease-out;
+        }
+        
+        .scroll-scale.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        /* Card Hover Animation */
+        .catalogue-card {
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: card-appear 0.6s ease forwards;
+        }
+        
+        @keyframes card-appear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .catalogue-card:nth-child(1) { animation-delay: 0.1s; }
+        .catalogue-card:nth-child(2) { animation-delay: 0.2s; }
+        .catalogue-card:nth-child(3) { animation-delay: 0.3s; }
+        .catalogue-card:nth-child(4) { animation-delay: 0.4s; }
+        .catalogue-card:nth-child(5) { animation-delay: 0.5s; }
+        .catalogue-card:nth-child(6) { animation-delay: 0.6s; }
+        .catalogue-card:nth-child(7) { animation-delay: 0.7s; }
+        .catalogue-card:nth-child(8) { animation-delay: 0.8s; }
+        
+        .catalogue-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.2);
+        }
+        
+        /* Section Title */
+        .section-title { color: #fff; font-size: 1.5rem; font-weight: 600; margin-bottom: 25px; }
+        
+        /* History Section */
+        .history-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .history-header {
+            cursor: pointer;
+            padding: 10px 0;
+        }
+        .history-header h5 {
+            color: #fff;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+        }
+        .history-header .toggle-icon {
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+        }
+        .history-dropdown {
+            display: none;
+        }
+        .history-dropdown.show {
+            display: block;
+        }
+        .csv-file-indicator {
+            display: flex;
+            align-items: center;
+        }
+        
+        .kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 25px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+        }
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-subtle), var(--accent-subtle));
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(138, 43, 226, 0.3);
+        }
+        .kpi-card i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--primary-subtle), var(--accent-subtle));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .kpi-card h3 {
+            color: #fff;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .kpi-card p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .chart-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 25px;
+            height: 100%;
+        }
+        .chart-card h5 {
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        .chart-container { height: 350px; position: relative; }
+        
+        .data-table {
+            width: 100%;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .data-table th, .data-table td {
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .data-table th {
+            color: var(--primary-subtle);
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        .data-table tr:hover { background: rgba(79, 172, 254, 0.1); }
+        
+        .badge-success { background: rgba(34, 197, 94, 0.2); color: #68d391; }
+        .badge-warning { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .badge-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        
+        .insight-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border-left: 3px solid;
+        }
+        .insight-item.danger { background: rgba(239, 68, 68, 0.1); border-left-color: #ef4444; }
+        .insight-item.warning { background: rgba(251, 191, 36, 0.1); border-left-color: #fbbf24; }
+        .insight-item.success { background: rgba(34, 197, 94, 0.1); border-left-color: #22c55e; }
+        .insight-item.info { background: rgba(59, 130, 246, 0.1); border-left-color: #3b82f6; }
+        
+        .file-selector, .catalogue-selector {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .file-selector select, .catalogue-selector select {
+            background: rgba(138, 43, 226, 0.1);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 10px;
+            padding: 12px 15px;
+            color: #fff;
+            width: 100%;
+        }
+        .file-selector select option, .catalogue-selector select option { background: #1a1a3e; color: #fff; }
+        
+        .ai-insights-box {
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(138, 43, 226, 0.1) 100%);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .ai-insights-box h5 {
+            color: var(--primary-subtle);
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .catalogue-detail-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .progress-custom {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-custom .progress-bar {
+            height: 100%;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(138, 43, 226, 0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4facfe, #8a2be2);
+            border-radius: 4px;
+        }
+        
+        .text-gradient {
+            background: linear-gradient(135deg, var(--primary-subtle), var(--accent-subtle));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .welcome-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+        }
+        .welcome-text span {
+            color: #fff;
+            font-weight: 500;
+        }
+        
+        .nav-tabs {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-tabs .nav-link {
+            color: rgba(255, 255, 255, 0.6);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s ease;
+        }
+        .nav-tabs .nav-link:hover {
+            color: #fff;
+            background: rgba(79, 172, 254, 0.1);
+        }
+        .nav-tabs .nav-link.active {
+            color: var(--primary-subtle);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-bottom-color: transparent;
+        }
+        
+        .catalogue-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+        .catalogue-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.2);
+            border-color: var(--primary-subtle);
+        }
+        .catalogue-card.selected {
+            border-color: var(--primary-subtle);
+            background: rgba(79, 172, 254, 0.15);
+        }
+        .catalogue-card h6 {
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        .catalogue-card .catalogue-id {
+            font-size: 0.8rem;
+            color: var(--primary-subtle);
+            margin-bottom: 8px;
+        }
+        .catalogue-card .metric {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+        .catalogue-card .metric span:last-child {
+            color: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Navigation with Hamburger and Quick Icons -->
+    <div class="mobile-nav">
+        <button class="mobile-nav-btn" onclick="toggleSidebar()" title="Menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <a href="/seller-dashboard" class="mobile-nav-btn" title="Dashboard">
+            <i class="fas fa-home"></i>
+        </a>
+        <a href="/catalogue" class="mobile-nav-btn active" title="Catalogue">
+            <i class="fas fa-book"></i>
+        </a>
+        <a href="/sku-analysis" class="mobile-nav-btn" title="SKU Analysis">
+            <i class="fas fa-barcode"></i>
+        </a>
+        <a href="/seller-comparison" class="mobile-nav-btn" title="Comparison">
+            <i class="fas fa-columns"></i>
+        </a>
+        <a href="/pl" class="mobile-nav-btn" title="Profit & Loss">
+            <i class="fas fa-chart-pie"></i>
+        </a>
+        <a href="/seller-settings" class="mobile-nav-btn" title="Settings">
+            <i class="fas fa-cog"></i>
+        </a>
+    </div>
+    
+    <!-- Mobile Toggle Button -->
+    <button class="mobile-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar pt-4" id="sidebar">
+        <div class="sidebar-top-actions">
+            <div class="sidebar-brand">
+                <h4 class="text-center"><i class="fas fa-cube me-2"></i><span class="sidebar-link-text">Retrix</span></h4>
+            </div>
+            <button class="menu-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <a href="/seller-dashboard">
+            <i class="fas fa-home"></i>
+            <span class="sidebar-link-text">Dashboard</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/catalogue" class="active">
+            <i class="fas fa-book"></i>
+            <span class="sidebar-link-text">Catalogue Analysis</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/sku-analysis">
+            <i class="fas fa-barcode"></i>
+            <span class="sidebar-link-text">SKU Analysis</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/seller-comparison">
+            <i class="fas fa-columns"></i>
+            <span class="sidebar-link-text">Comparison</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/pl">
+            <i class="fas fa-chart-pie"></i>
+            <span class="sidebar-link-text">Profit & Loss</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="/seller-settings">
+            <i class="fas fa-cog"></i>
+            <span class="sidebar-link-text">Settings</span>
+            <div class="nav-indicator"></div>
+        </a>
+        
+        <!-- Logout -->
+        <a href="/seller-logout" class="logout-btn-bottom">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="sidebar-link-text">Logout</span>
+        </a>
+    </div>
+
+    <div class="main-content">
+        <div class="header-section mb-4" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 30px;">
+          <div>
+            <h1 class="section-title mb-0">Catalogue Analysis</h1>
+          </div>
+          {% if selected_upload %}
+          <span class="csv-file-indicator" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+            <i class="fas fa-file-csv" style="color: #4facfe; margin-right: 8px;"></i>
+            <span class="csv-file-name" title="{{ selected_upload.original_name }}" style="color: var(--primary-subtle); font-weight: 500;">
+              {{ selected_upload.original_name }}
+            </span>
+          </span>
+          {% elif uploads %}
+          <span class="csv-file-indicator" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+            <span style="color: var(--primary-subtle); font-weight: 500;">Select a file from Upload History</span>
+          </span>
+          {% else %}
+          <span class="csv-file-indicator" style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">
+            <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
+            No CSV files uploaded
+          </span>
+          {% endif %}
+        </div>
+        <div class="history-section mb-4">
+          <div class="history-header" onclick="toggleHistoryDropdown()">
+            <h5>
+              <i class="fas fa-history"></i>
+              Upload History
+              <i class="fas fa-chevron-down toggle-icon" id="historyToggleIcon"></i>
+            </h5>
+          </div>
+          <div class="history-dropdown" id="historyDropdown">
+            {% if uploads %}
+            <div style="max-height: 250px; overflow-y: auto; background: rgba(15,23,42,0.5); border-radius: 8px; padding: 10px; margin-top: 15px;">
+              <table style="width: 100%; border-collapse: collapse;">
+                {% for upload in uploads %}
+                <tr onclick="selectCSV('{{ upload.id }}')" style="cursor: pointer;{% if selected_upload and selected_upload.id == upload.id %} background: rgba(34, 197, 94, 0.2);{% endif %}">
+                  <td style="padding: 14px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                    <i class="fas fa-file-csv" style="color: #4facfe; margin-right: 10px;"></i>
+                    <span style="color: #e5e7eb; font-size: 0.9rem;">{{ upload.original_name }}</span>
+                  </td>
+                  <td style="padding: 14px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); text-align: right;">
+                    <span style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">{{ upload.upload_date }}</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </table>
+            </div>
+            {% else %}
+            <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem; margin-top: 10px;">No previous uploads found.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if not data.catalogues %}
+        <div class="alert alert-warning" style="background: rgba(251, 191, 36, 0.2); border: 1px solid rgba(251, 191, 36, 0.3); color: #fbbf24;">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            No CSV data available. Please upload a CSV file to view catalogue analysis.
+        </div>
+        {% else %}
+        
+        <!-- KPI Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="kpi-card">
+                    <i class="fas fa-book"></i>
+                    <h3>{{ data.total_catalogues }}</h3>
+                    <p>Total Catalogues</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card">
+                    <i class="fas fa-rupee-sign"></i>
+                    <h3>Rs{{ "{:,.0f}".format(data.total_revenue) }}</h3>
+                    <p>Total Revenue</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card">
+                    <i class="fas fa-undo"></i>
+                    <h3>{{ data.avg_return_rate }}%</h3>
+                    <p>Avg Return Rate</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card">
+                    <i class="fas fa-trending-up"></i>
+                    <h3>Rs{{ "{:,.0f}".format(data.avg_profit_margin) }}%</h3>
+                    <p>Avg Profit Margin</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Insights Box -->
+        <div class="ai-insights-box">
+            <h5><i class="fas fa-robot me-2"></i>Data-Insights</h5>
+            {% if data.insights.dangers %}
+            {% for danger in data.insights.dangers %}
+            <div class="insight-item danger">
+                <i class="fas fa-exclamation-circle text-danger mt-1"></i>
+                <p class="mb-0">{{ danger }}</p>
+            </div>
+            {% endfor %}
+            {% endif %}
+            
+            {% if data.insights.warnings %}
+            {% for warning in data.insights.warnings %}
+            <div class="insight-item warning">
+                <i class="fas fa-exclamation-triangle text-warning mt-1"></i>
+                <p class="mb-0">{{ warning }}</p>
+            </div>
+            {% endfor %}
+            {% endif %}
+            
+            {% if data.insights.successes %}
+            {% for success in data.insights.successes %}
+            <div class="insight-item success">
+                <i class="fas fa-check-circle text-success mt-1"></i>
+                <p class="mb-0">{{ success }}</p>
+            </div>
+            {% endfor %}
+            {% endif %}
+            
+            {% if data.insights.recommendations %}
+            <div class="insight-item info mt-3">
+                <i class="fas fa-lightbulb text-info mt-1"></i>
+                <div>
+                    <strong class="text-white">Recommendations:</strong>
+                    <ul class="mb-0 mt-2 ps-3">
+                        {% for rec in data.insights.recommendations %}
+                        <li>{{ rec }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if data.insights.actions %}
+            <div class="insight-item mt-3" style="background: rgba(34, 197, 94, 0.1); border-left-color: #22c55e;">
+                <i class="fas fa-tasks text-success mt-1"></i>
+                <div>
+                    <strong class="text-white">Action Items:</strong>
+                    <ul class="mb-0 mt-2 ps-3">
+                        {% for action in data.insights.actions %}
+                        <li><strong>{{ action.title }}:</strong> {{ action.description }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Catalogue Selector -->
+        <div class="catalogue-selector">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <label class="text-white mb-0"><i class="fas fa-search me-2"></i>Select Catalogue for Individual Analysis</label>
+                </div>
+                <div class="col-md-8">
+                    <select class="form-select" id="catalogueSelect" onchange="analyzeCatalogue(this.value)">
+                        <option value="">-- Select a Catalogue --</option>
+                        {% if data.top_catalogues %}
+                        {% for cat in data.top_catalogues %}
+                        <option value="{{ cat.catalogue_id }}">{{ cat.catalogue_id }} - Rs{{ "{:,.0f}".format(cat.revenue) }} revenue</option>
+                        {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Individual Catalogue Analysis Section -->
+        <div id="individualCatalogueSection" style="display: none;">
+            <div class="catalogue-detail-card">
+                <h4 class="mb-4"><i class="fas fa-book-open me-2"></i>Individual Catalogue Analysis: <span id="selectedCatalogueId" class="text-gradient"></span></h4>
+                
+                <div class="row g-4 mb-4" id="catalogueMetricsRow"></div>
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-chart-bar me-2"></i>Catalogue Performance Metrics</h5>
+                            <div class="chart-container">
+                                <canvas id="cataloguePerformanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-card">
+                            <h5><i class="fas fa-robot me-2"></i>AI Analysis for This Catalogue</h5>
+                            <div id="catalogueAIInsights"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs for Different Graphs -->
+        <ul class="nav nav-tabs mb-4" id="catalogueTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="revenue-tab" data-bs-toggle="tab" data-bs-target="#revenue" type="button" role="tab">
+                    <i class="fas fa-chart-bar me-2"></i>Revenue by Catalogue
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="returns-tab" data-bs-toggle="tab" data-bs-target="#returns" type="button" role="tab">
+                    <i class="fas fa-undo me-2"></i>Returns by Catalogue
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">
+                    <i class="fas fa-shopping-cart me-2"></i>Orders by Catalogue
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="margin-tab" data-bs-toggle="tab" data-bs-target="#margin" type="button" role="tab">
+                    <i class="fas fa-percentage me-2"></i>Profit Margin by Catalogue
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="catalogueTabsContent">
+            <!-- Revenue Tab -->
+            <div class="tab-pane fade show active" id="revenue" role="tabpanel">
+                <div class="chart-card">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Revenue by Catalogue ID</h5>
+                    <div class="chart-container">
+                        <canvas id="catalogueRevenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Returns Tab -->
+            <div class="tab-pane fade" id="returns" role="tabpanel">
+                <div class="chart-card">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Returns by Catalogue ID</h5>
+                    <div class="chart-container">
+                        <canvas id="catalogueReturnsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Orders Tab -->
+            <div class="tab-pane fade" id="orders" role="tabpanel">
+                <div class="chart-card">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Orders by Catalogue ID</h5>
+                    <div class="chart-container">
+                        <canvas id="catalogueOrdersChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Profit Margin Tab -->
+            <div class="tab-pane fade" id="margin" role="tabpanel">
+                <div class="chart-card">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Profit Margin by Catalogue ID</h5>
+                    <div class="chart-container">
+                        <canvas id="catalogueMarginChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Catalogues Table -->
+        <div class="chart-card mb-4 mt-4">
+            <h5><i class="fas fa-trophy me-2"></i>Top Performing Catalogues</h5>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Catalogue ID</th>
+                            <th>Category</th>
+                            <th>Orders</th>
+                            <th>Revenue</th>
+                            <th>Returns</th>
+                            <th>Return Rate</th>
+                            <th>Profit Margin</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if data.top_catalogues %}
+                        {% for cat in data.top_catalogues %}
+                        <tr>
+                            <td><strong>{{ cat.catalogue_id }}</strong></td>
+                            <td>{{ cat.category }}</td>
+                            <td>{{ cat.orders }}</td>
+                            <td>Rs{{ "{:,.2f}".format(cat.revenue) }}</td>
+                            <td>{{ cat.returns }}</td>
+                            <td>
+                                <span class="badge {% if cat.return_rate > 10 %}badge-danger{% elif cat.return_rate > 5 %}badge-warning{% else %}badge-success{% endif %}">
+                                    {{ cat.return_rate }}%
+                                </span>
+                            </td>
+                            <td>{{ "%.1f"|format(cat.profit_margin) }}%</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="analyzeCatalogue('{{ cat.catalogue_id }}')">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% endif %}
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            // Scroll Animation Observer
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const scrollObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, observerOptions);
+            
+            document.querySelectorAll('.scroll-fade, .scroll-scale').forEach(el => {
+                scrollObserver.observe(el);
+            });
+            
+            // Sidebar Toggle Functions
+            function toggleSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                const isMobile = window.innerWidth <= 992;
+                
+                if (isMobile) {
+                    sidebar.classList.toggle('show');
+                    overlay.classList.toggle('show');
+                    // Toggle hamburger to X
+                    const menuIcon = document.querySelector('.menu-toggle i');
+                    if (sidebar.classList.contains('show')) {
+                        menuIcon.classList.remove('fa-bars');
+                        menuIcon.classList.add('fa-times');
+                    } else {
+                        menuIcon.classList.remove('fa-times');
+                        menuIcon.classList.add('fa-bars');
+                    }
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                }
+            }
+            
+            function closeSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+                const menuIcon = document.querySelector('.menu-toggle i');
+                if (menuIcon) {
+                    menuIcon.classList.remove('fa-times');
+                    menuIcon.classList.add('fa-bars');
+                }
+            }
+            
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 992) {
+                    closeSidebar();
+                }
+            });
+            
+            function toggleHistoryDropdown() {
+                const dropdown = document.getElementById('historyDropdown');
+                const icon = document.getElementById('historyToggleIcon');
+                if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+                    dropdown.style.display = 'block';
+                    icon.style.transform = 'rotate(180deg)';
+                } else {
+                    dropdown.style.display = 'none';
+                    icon.style.transform = 'rotate(0deg)';
+                }
+            }
+            
+            function selectCSV(uploadId) {
+                window.location.href = '/catalogue?upload_id=' + uploadId;
+            }
+            
+            // Global chart instances
+            let catalogueRevenueChart, catalogueReturnsChart, catalogueOrdersChart, catalogueMarginChart;
+            let cataloguePerformanceChart;
+
+            // Catalogue data for JavaScript
+            const cataloguesData = {{ data.catalogues|tojson|safe }};
+
+            function changeFile(fileId) {
+                window.location.href = '/reprocess-csv/' + fileId + '?redirect=catalogue';
+            }
+
+            function selectCatalogue(catalogueId) {
+                // Remove selected class from all cards
+                document.querySelectorAll('.catalogue-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                // Add selected class to clicked card
+                const card = document.getElementById('cat-card-' + catalogueId);
+                if (card) {
+                    card.classList.add('selected');
+                }
+                analyzeCatalogue(catalogueId);
+            }
+
+            function analyzeCatalogue(catalogueId) {
+                if (!catalogueId) return;
+                
+                const catalogue = cataloguesData.find(c => c.catalogue_id == catalogueId);
+                if (!catalogue) return;
+
+                // Show the individual analysis section
+                document.getElementById('individualCatalogueSection').style.display = 'block';
+                document.getElementById('selectedCatalogueId').textContent = catalogueId + ' - ' + catalogue.category;
+
+                // Generate metrics row
+                const metricsHtml = `
+                    <div class="col-md-3">
+                        <div class="kpi-card">
+                            <i class="fas fa-shopping-cart"></i>
+                            <h3>${catalogue.orders}</h3>
+                            <p>Orders</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="kpi-card">
+                            <i class="fas fa-rupee-sign"></i>
+                            <h3>Rs${catalogue.revenue.toLocaleString()}</h3>
+                            <p>Revenue</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="kpi-card ${catalogue.return_rate > 10 ? 'warning' : ''}">
+                            <i class="fas fa-undo"></i>
+                            <h3>${catalogue.return_rate}%</h3>
+                            <p>Return Rate</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="kpi-card">
+                            <i class="fas fa-percentage"></i>
+                            <h3>${catalogue.profit_margin.toFixed(1)}%</h3>
+                            <p>Profit Margin</p>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('catalogueMetricsRow').innerHTML = metricsHtml;
+
+                // Generate AI insights for this catalogue
+                let aiInsights = '<div class="insight-item ' + (catalogue.return_rate > 15 ? 'danger' : catalogue.return_rate > 10 ? 'warning' : 'success') + '">';
+                if (catalogue.return_rate > 15) {
+                    aiInsights += '<i class="fas fa-exclamation-circle text-danger mt-1"></i>';
+                    aiInsights += '<p class="mb-0">This catalogue has a high return rate of ' + catalogue.return_rate + '%. Consider reviewing product quality and descriptions.</p>';
+                } else if (catalogue.return_rate > 10) {
+                    aiInsights += '<i class="fas fa-exclamation-triangle text-warning mt-1"></i>';
+                    aiInsights += '<p class="mb-0">Return rate is at ' + catalogue.return_rate + '%. Monitor closely and investigate root causes.</p>';
+                } else {
+                    aiInsights += '<i class="fas fa-check-circle text-success mt-1"></i>';
+                    aiInsights += '<p class="mb-0">Healthy return rate of ' + catalogue.return_rate + '%. Keep up the good work!</p>';
+                }
+                aiInsights += '</div>';
+
+                if (catalogue.profit_margin < 10) {
+                    aiInsights += '<div class="insight-item warning">';
+                    aiInsights += '<i class="fas fa-exclamation-triangle text-warning mt-1"></i>';
+                    aiInsights += '<p class="mb-0">Low profit margin of ' + catalogue.profit_margin.toFixed(1) + '%. Consider optimizing costs or adjusting pricing.</p>';
+                    aiInsights += '</div>';
+                }
+
+                if (catalogue.orders > 50) {
+                    aiInsights += '<div class="insight-item success">';
+                    aiInsights += '<i class="fas fa-star text-success mt-1"></i>';
+                    aiInsights += '<p class="mb-0">High order volume (' + catalogue.orders + ' orders). This is a popular catalogue!</p>';
+                    aiInsights += '</div>';
+                }
+
+                aiInsights += '<div class="insight-item info mt-3">';
+                aiInsights += '<i class="fas fa-lightbulb text-info mt-1"></i>';
+                aiInsights += '<div><strong class="text-white">Recommendations:</strong>';
+                aiInsights += '<ul class="mb-0 mt-2 ps-3">';
+                if (catalogue.return_rate > 10) {
+                    aiInsights += '<li>Conduct quality checks on products in this catalogue</li>';
+                    aiInsights += '<li>Improve product descriptions and images</li>';
+                }
+                if (catalogue.profit_margin < 15) {
+                    aiInsights += '<li>Review pricing strategy for this catalogue</li>';
+                }
+                aiInsights += '<li>Analyze customer feedback for improvement opportunities</li>';
+                aiInsights += '</ul></div></div>';
+
+                document.getElementById('catalogueAIInsights').innerHTML = aiInsights;
+
+                // Create performance chart for this catalogue
+                const ctx = document.getElementById('cataloguePerformanceChart').getContext('2d');
+                if (cataloguePerformanceChart) {
+                    cataloguePerformanceChart.destroy();
+                }
+                cataloguePerformanceChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Orders', 'Revenue (÷100)', 'Returns', 'Profit Margin'],
+                        datasets: [{
+                            label: catalogueId,
+                            data: [catalogue.orders, catalogue.revenue / 100, catalogue.returns, catalogue.profit_margin],
+                            backgroundColor: [
+                                'rgba(79, 172, 254, 0.7)',
+                                'rgba(34, 197, 94, 0.7)',
+                                'rgba(239, 68, 68, 0.7)',
+                                'rgba(251, 191, 36, 0.7)'
+                            ],
+                            borderColor: [
+                                '#4facfe',
+                                '#22c55e',
+                                '#ef4444',
+                                '#fbbf24'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: { color: '#fff' }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                ticks: { color: 'rgba(255,255,255,0.7)' }
+                            },
+                            x: {
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                ticks: { color: 'rgba(255,255,255,0.7)' }
+                            }
+                        }
+                    }
+                });
+
+                // Scroll to the individual analysis section
+                document.getElementById('individualCatalogueSection').scrollIntoView({ behavior: 'smooth' });
+            }
+
+            // Initialize charts when page loads
+            document.addEventListener('DOMContentLoaded', function() {
+                {% if data.catalogues and data.catalogues|length > 0 %}
+                initCharts();
+                {% endif %}
+            });
+
+            function initCharts() {
+                const catalogues = cataloguesData.slice(0, 15); // Top 15 catalogues
+                const labels = catalogues.map(c => c.catalogue_id);
+                const revenues = catalogues.map(c => c.revenue);
+                const returns = catalogues.map(c => c.returns);
+                const orders = catalogues.map(c => c.orders);
+                const margins = catalogues.map(c => c.profit_margin);
+
+                // Revenue Chart
+                const revenueCtx = document.getElementById('catalogueRevenueChart').getContext('2d');
+                catalogueRevenueChart = new Chart(revenueCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Revenue (₹)',
+                            data: revenues,
+                            backgroundColor: 'rgba(79, 172, 254, 0.7)',
+                            borderColor: '#4facfe',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#fff' } }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                ticks: { 
+                                    color: 'rgba(255,255,255,0.7)',
+                                    callback: function(value) {
+                                        return '₹' + value.toLocaleString();
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                ticks: { color: 'rgba(255,255,255,0.7)' }
+                            }
+                        }
+                    }
+                });
+
+                // Returns Chart
+                const returnsCtx = document.getElementById('catalogueReturnsChart').getContext('2d');
+                catalogueReturnsChart = new Chart(returnsCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Returns',
+                            data: returns,
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderColor: '#ef4444',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#fff' } }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                ticks: { color: 'rgba(255,255,255,0.7)' }
+                            },
+                            x: {
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                ticks: { color: 'rgba(255,255,255,0.7)' }
+                            }
+                        }
+                    }
+                });
+
+                // Orders Chart
+                const ordersCtx = document.getElementById('catalogueOrdersChart').getContext('2d');
+                catalogueOrdersChart = new Chart(ordersCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Orders',
+                            data: orders,
+                            backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                            borderColor: '#22c55e',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#fff' } }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                ticks: { color: 'rgba(255,255,255,0.7)' }
+                            },
+                            x: {
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                ticks: { color: 'rgba(255,255,255,0.7)' }
+                            }
+                        }
+                    }
+                });
+
+                // Profit Margin Chart
+                const marginCtx = document.getElementById('catalogueMarginChart').getContext('2d');
+                catalogueMarginChart = new Chart(marginCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Profit Margin (%)',
+                            data: margins,
+                            backgroundColor: margins.map(m => m >= 15 ? 'rgba(34, 197, 94, 0.7)' : m >= 10 ? 'rgba(251, 191, 36, 0.7)' : 'rgba(239, 68, 68, 0.7)'),
+                            borderColor: margins.map(m => m >= 15 ? '#22c55e' : m >= 10 ? '#fbbf24' : '#ef4444'),
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#fff' } }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                ticks: { 
+                                    color: 'rgba(255,255,255,0.7)',
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                ticks: { color: 'rgba(255,255,255,0.7)' }
+                            }
+                        }
+                    }
+                });
+            }
+        </script>
+    </div>
+{% include 'pdf_download_btn.html' %}
+</body>
+</html>

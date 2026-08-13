@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Flask
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Uploads (keep folder structure via .gitkeep)
+uploads/*
+!uploads/.gitkeep
+!uploads/profile/
+uploads/profile/*
+!uploads/profile/.gitkeep
+
+# Static uploads (keep folder structure via .gitkeep)
+static/uploads/*
+!static/uploads/.gitkeep
+!static/uploads/profile/
+static/uploads/profile/*
+!static/uploads/profile/.gitkeep
+!static/uploads/favicon.png
