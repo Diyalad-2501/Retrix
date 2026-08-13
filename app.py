@@ -250,13 +250,13 @@ def send_otp_email(email, otp, purpose='verification'):
             req = urllib.request.Request(
                 "https://api.resend.com/emails",
                 data=json.dumps({
-                    "from": "Retrix <onboarding@resend.dev>",
+                    "from": "onboarding@resend.dev",
                     "to": [email],
                     "subject": subject,
                     "html": body
                 }).encode('utf-8'),
                 headers={
-                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Authorization": f"Bearer {RESEND_API_KEY.strip()}",
                     "Content-Type": "application/json"
                 },
                 method="POST"
@@ -265,6 +265,9 @@ def send_otp_email(email, otp, purpose='verification'):
                 if resp.status in (200, 201):
                     print(f"SUCCESS: OTP Email sent via Resend API to {email}")
                     return True
+        except urllib.error.HTTPError as e_http:
+            err_body = e_http.read().decode('utf-8') if hasattr(e_http, 'fp') and e_http.fp else ""
+            print(f"Resend API HTTP Error {e_http.code}: {e_http.reason} - {err_body}")
         except Exception as e:
             print(f"Resend API Error: {e}")
 
