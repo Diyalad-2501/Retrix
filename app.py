@@ -248,12 +248,21 @@ def send_otp_email(email, otp, purpose='verification'):
         msg['To'] = email
         msg.attach(MIMEText(body, 'html'))
 
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(EMAIL_USER, EMAIL_PASS)
-            server.sendmail(EMAIL_USER, email, msg.as_string())
-
-        print(f"Email sent successfully to {email}")
-        return True
+        # Try TLS port 587 first (standard for cloud platforms like Render)
+        try:
+            with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
+                server.starttls()
+                server.login(EMAIL_USER, EMAIL_PASS)
+                server.sendmail(EMAIL_USER, email, msg.as_string())
+            print(f"Email sent successfully to {email} via TLS (587)")
+            return True
+        except Exception as e_tls:
+            print(f"TLS (587) failed: {e_tls}. Trying SSL (465)...")
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=10) as server:
+                server.login(EMAIL_USER, EMAIL_PASS)
+                server.sendmail(EMAIL_USER, email, msg.as_string())
+            print(f"Email sent successfully to {email} via SSL (465)")
+            return True
     except Exception as e:
         print(f"Error sending email: {e}")
         return False
