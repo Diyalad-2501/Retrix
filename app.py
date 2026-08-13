@@ -185,21 +185,21 @@ def generate_otp():
     return ''.join(random.choices(string.digits, k=6))
 
 def send_otp_email(email, otp, purpose='verification'):
-    """Send OTP email using Gmail SMTP"""
+    """Send OTP email using HTTP APIs (Resend, SendGrid, Brevo) or SMTP with fallback logging"""
+    import json
+    import urllib.request
+    import urllib.error
     import smtplib
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
 
-    # Get Gmail credentials from environment variables
-    EMAIL_USER = os.environ.get('EMAIL_USER')
+    EMAIL_USER = os.environ.get('EMAIL_USER', 'laddiya2007@gmail.com')
     EMAIL_PASS = os.environ.get('EMAIL_PASS')
+    RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
+    SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
+    BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
 
     print(f"DEBUG: EMAIL_USER = {EMAIL_USER}")
-    print(f"DEBUG: EMAIL_PASS configured = {'Yes' if EMAIL_PASS else 'No'}")
-
-    if not EMAIL_USER or not EMAIL_PASS:
-        print("Gmail credentials not configured. Set EMAIL_USER and EMAIL_PASS in .env file.")
-        return False
 
     # Subject and body based on purpose
     if purpose == 'verification':
@@ -241,31 +241,109 @@ def send_otp_email(email, otp, purpose='verification'):
         </html>
         """
 
-    try:
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From'] = EMAIL_USER
-        msg['To'] = email
-        msg.attach(MIMEText(body, 'html'))
-
-        # Try TLS port 587 first (standard for cloud platforms like Render)
+    # 1. Resend API (HTTP Port 443 - Never blocked on Render)
+    if RESEND_API_KEY:
         try:
-            with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
-                server.starttls()
-                server.login(EMAIL_USER, EMAIL_PASS)
-                server.sendmail(EMAIL_USER, email, msg.as_string())
-            print(f"Email sent successfully to {email} via TLS (587)")
-            return True
-        except Exception as e_tls:
-            print(f"TLS (587) failed: {e_tls}. Trying SSL (465)...")
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=10) as server:
-                server.login(EMAIL_USER, EMAIL_PASS)
-                server.sendmail(EMAIL_USER, email, msg.as_string())
-            print(f"Email sent successfully to {email} via SSL (465)")
-            return True
-    except Exception as e:
-        print(f"Error sending email: {e}")
-        return False
+            req = urllib.request.Request(
+                "https://api.resend.com/emails",
+                data=json.dumps({
+                    "from": "Retrix <onboarding@resend.dev>",
+                    "to": [email],
+                    "subject": subject,
+                    "html": body
+                }).encode('utf-8'),
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status in (200, 201):
+                    print(f"SUCCESS: OTP Email sent via Resend API to {email}")
+                    return True
+        except Exception as e:
+            print(f"Resend API Error: {e}")
+
+    # 2. SendGrid API (HTTP Port 443 - Never blocked on Render)
+    if SENDGRID_API_KEY:
+        try:
+            req = urllib.request.Request(
+                "https://api.sendgrid.com/v3/mail/send",
+                data=json.dumps({
+                    "personalizations": [{"to": [{"email": email}]}],
+                    "from": {"email": EMAIL_USER},
+                    "subject": subject,
+                    "content": [{"type": "text/html", "value": body}]
+                }).encode('utf-8'),
+                headers={
+                    "Authorization": f"Bearer {SENDGRID_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status in (200, 202):
+                    print(f"SUCCESS: OTP Email sent via SendGrid API to {email}")
+                    return True
+        except Exception as e:
+            print(f"SendGrid API Error: {e}")
+
+    # 3. Brevo API (HTTP Port 443 - Never blocked on Render)
+    if BREVO_API_KEY:
+        try:
+            req = urllib.request.Request(
+                "https://api.brevo.com/v3/smtp/email",
+                data=json.dumps({
+                    "sender": {"name": "Retrix", "email": EMAIL_USER},
+                    "to": [{"email": email}],
+                    "subject": subject,
+                    "htmlContent": body
+                }).encode('utf-8'),
+                headers={
+                    "api-key": BREVO_API_KEY,
+                    "Content-Type": "application/json"
+                },
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status in (200, 201):
+                    print(f"SUCCESS: OTP Email sent via Brevo API to {email}")
+                    return True
+        except Exception as e:
+            print(f"Brevo API Error: {e}")
+
+    # 4. Gmail SMTP (Local development)
+    if EMAIL_USER and EMAIL_PASS:
+        try:
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = EMAIL_USER
+            msg['To'] = email
+            msg.attach(MIMEText(body, 'html'))
+
+            try:
+                with smtplib.SMTP('smtp.gmail.com', 587, timeout=4) as server:
+                    server.starttls()
+                    server.login(EMAIL_USER, EMAIL_PASS)
+                    server.sendmail(EMAIL_USER, email, msg.as_string())
+                print(f"SUCCESS: Email sent to {email} via TLS (587)")
+                return True
+            except Exception as e_tls:
+                with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=4) as server:
+                    server.login(EMAIL_USER, EMAIL_PASS)
+                    server.sendmail(EMAIL_USER, email, msg.as_string())
+                print(f"SUCCESS: Email sent to {email} via SSL (465)")
+                return True
+        except Exception as e:
+            print(f"SMTP failed (Render blocks raw SMTP ports 25/465/587): {e}")
+
+    # Fallback log output for Render Dashboard
+    print(f"==================================================")
+    print(f"🔑 RENDER OTP LOG FOR {email}: [{otp}]")
+    print(f"==================================================")
+
+    return False
 
 def is_otp_valid(otp_expiry):
     """Check if OTP has not expired"""
