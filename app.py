@@ -1313,7 +1313,7 @@ def seller_register():
         if email_sent:
             flash(f'Verification code sent to {email}. Please check your inbox.', 'success')
         else:
-            flash('Could not send email. Please check your email address and try again, or contact support.', 'danger')
+            flash(f'Verification code generated for {email}. Please check your inbox or check Render logs.', 'info')
 
         return redirect(url_for('verify_otp'))
     
@@ -1324,6 +1324,7 @@ def verify_otp():
     """Verify OTP for registration or password reset"""
     seller_id = session.get('otp_seller_id')
     purpose = session.get('otp_purpose')
+    show_dev_otp = os.environ.get('SHOW_DEV_OTP', 'false').lower() == 'true'
     
     if not seller_id:
         flash('Please start the verification process again', 'danger')
@@ -1333,6 +1334,8 @@ def verify_otp():
     if not seller:
         flash('Invalid verification request', 'danger')
         return redirect(url_for('seller_register'))
+    
+    test_otp = seller.otp_code if show_dev_otp else None
     
     if request.method == 'POST':
         otp_input = request.form.get('otp', '')
@@ -1351,9 +1354,9 @@ def verify_otp():
             if email_sent:
                 flash('New OTP sent to your email. Please check your inbox.', 'success')
             else:
-                flash('Could not send email. Please try again later.', 'danger')
+                flash('New OTP generated! Please check your inbox or check Render logs.', 'info')
             
-            return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose)
+            return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose, test_otp=new_otp if show_dev_otp else None)
         
         # Verify OTP
         if seller.otp_code == otp_input and is_otp_valid(seller.otp_expiry):
@@ -1390,9 +1393,9 @@ def verify_otp():
             else:
                 flash('Invalid OTP. Please try again.', 'danger')
             
-            return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose)
+            return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose, test_otp=test_otp)
     
-    return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose)
+    return render_template('verify_otp.html', seller_id=seller_id, purpose=purpose, test_otp=test_otp)
 
 @app.route('/seller-login', methods=['GET', 'POST'])
 def seller_login():
@@ -1421,7 +1424,7 @@ def seller_login():
                 if email_sent:
                     flash(f'Verification code sent to {email}. Please check your inbox.', 'success')
                 else:
-                    flash('Could not send verification email. Please try again or contact support.', 'danger')
+                    flash(f'Verification code generated for {email}. Please check your inbox or check Render logs.', 'info')
 
                 return redirect(url_for('verify_otp'))
             
@@ -1468,7 +1471,7 @@ def seller_forgot_password():
         if email_sent:
             flash('Verification code sent to your email. Please check your inbox.', 'success')
         else:
-            flash('Could not send reset email. Please check your email address and try again.', 'danger')
+            flash('Verification code generated. Please check your inbox or check Render logs.', 'info')
 
         return redirect(url_for('verify_otp'))
     
