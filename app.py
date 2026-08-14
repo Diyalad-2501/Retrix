@@ -1,10 +1,16 @@
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, make_response
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from functools import wraps
 import re
-import os
 import csv
 import io
 import random
@@ -1805,6 +1811,8 @@ def get_two_month_comparison_data(seller_id, month1, year1, month2, year2):
         for csv_path in csv_files:
             try:
                 df = pd.read_csv(csv_path)
+                # Normalize column names: strip whitespace and lowercase
+                df.columns = [str(c).strip().lower() for c in df.columns]
                 dataframes.append(df)
             except Exception as e:
                 print(f"Error reading {csv_path}: {e}")
@@ -1815,9 +1823,36 @@ def get_two_month_comparison_data(seller_id, month1, year1, month2, year2):
         # Concatenate all dataframes
         df = pd.concat(dataframes, ignore_index=True)
         
+        if 'order_date' not in df.columns:
+            return None
+            
         # Parse dates
         df['parsed_date'] = df['order_date'].apply(parse_order_date)
         df = df.dropna(subset=['parsed_date'])
+        
+        if df.empty:
+            return None
+            
+        # Ensure required columns with safe defaults
+        if 'order_price' in df.columns:
+            df['order_price'] = pd.to_numeric(df['order_price'], errors='coerce').fillna(0.0)
+        else:
+            df['order_price'] = 0.0
+            
+        if 'quantity' in df.columns:
+            df['quantity'] = pd.to_numeric(df['quantity'], errors='coerce').fillna(0)
+        else:
+            df['quantity'] = 0
+            
+        if 'return_cost' in df.columns:
+            df['return_cost'] = pd.to_numeric(df['return_cost'], errors='coerce').fillna(0.0)
+        else:
+            df['return_cost'] = 0.0
+            
+        if 'order_status' in df.columns:
+            df['order_status'] = df['order_status'].astype(str).str.strip().str.lower()
+        else:
+            df['order_status'] = 'delivered'
         
         # Extract year, month, and day
         df['year'] = df['parsed_date'].apply(lambda x: x.year)
@@ -1831,15 +1866,17 @@ def get_two_month_comparison_data(seller_id, month1, year1, month2, year2):
         if df1.empty and df2.empty:
             return None
         
-        # Calculate daily revenue for month 1
+        # Calculate daily revenue for month 1 (use string keys for json consistency)
         daily_revenue1 = {}
         if not df1.empty:
-            daily_revenue1 = df1.groupby('day')['order_price'].sum().to_dict()
+            daily_rev1_raw = df1.groupby('day')['order_price'].sum().to_dict()
+            daily_revenue1 = {str(k): float(v) for k, v in daily_rev1_raw.items()}
         
         # Calculate daily revenue for month 2
         daily_revenue2 = {}
         if not df2.empty:
-            daily_revenue2 = df2.groupby('day')['order_price'].sum().to_dict()
+            daily_rev2_raw = df2.groupby('day')['order_price'].sum().to_dict()
+            daily_revenue2 = {str(k): float(v) for k, v in daily_rev2_raw.items()}
         
         # Calculate metrics for month 1
         month1_data = {}
@@ -1848,19 +1885,23 @@ def get_two_month_comparison_data(seller_id, month1, year1, month2, year2):
             return_reasons1 = {}
             returned_df1 = df1[df1['order_status'] == 'returned']
             if not returned_df1.empty and 'return_reason' in returned_df1.columns:
-                return_reasons1 = returned_df1['return_reason'].value_counts().to_dict()
+                return_reasons1 = {str(k): int(v) for k, v in returned_df1['return_reason'].dropna().value_counts().to_dict().items()}
+            
+            total_rev1 = float(df1['order_price'].sum())
+            total_orders1 = int(len(df1))
+            ret_count1 = int(len(returned_df1))
             
             month1_data = {
                 'month_year': f"{datetime(year1, month1, 1).strftime('%B')} {year1}",
-                'total_orders': len(df1),
-                'total_quantity': df1['quantity'].sum(),
-                'total_revenue': df1['order_price'].sum(),
-                'avg_order_value': df1['order_price'].sum() / len(df1) if len(df1) > 0 else 0,
-                'delivered_count': len(df1[df1['order_status'] == 'delivered']),
-                'cancelled_count': len(df1[df1['order_status'] == 'cancelled']),
-                'returned_count': len(df1[df1['order_status'] == 'returned']),
-                'return_cost': df1['return_cost'].sum() if 'return_cost' in df1.columns else 0,
-                'return_rate': round((len(df1[df1['order_status'] == 'returned']) / len(df1) * 100), 2) if len(df1) > 0 else 0,
+                'total_orders': total_orders1,
+                'total_quantity': int(df1['quantity'].sum()),
+                'total_revenue': round(total_rev1, 2),
+                'avg_order_value': round(total_rev1 / total_orders1, 2) if total_orders1 > 0 else 0,
+                'delivered_count': int(len(df1[df1['order_status'] == 'delivered'])),
+                'cancelled_count': int(len(df1[df1['order_status'] == 'cancelled'])),
+                'returned_count': ret_count1,
+                'return_cost': round(float(df1['return_cost'].sum()), 2),
+                'return_rate': round((ret_count1 / total_orders1 * 100), 2) if total_orders1 > 0 else 0,
                 'daily_revenue': daily_revenue1,
                 'return_reasons': return_reasons1,
                 'has_data': True
@@ -1890,19 +1931,23 @@ def get_two_month_comparison_data(seller_id, month1, year1, month2, year2):
             return_reasons2 = {}
             returned_df2 = df2[df2['order_status'] == 'returned']
             if not returned_df2.empty and 'return_reason' in returned_df2.columns:
-                return_reasons2 = returned_df2['return_reason'].value_counts().to_dict()
+                return_reasons2 = {str(k): int(v) for k, v in returned_df2['return_reason'].dropna().value_counts().to_dict().items()}
+            
+            total_rev2 = float(df2['order_price'].sum())
+            total_orders2 = int(len(df2))
+            ret_count2 = int(len(returned_df2))
             
             month2_data = {
                 'month_year': f"{datetime(year2, month2, 1).strftime('%B')} {year2}",
-                'total_orders': len(df2),
-                'total_quantity': df2['quantity'].sum(),
-                'total_revenue': df2['order_price'].sum(),
-                'avg_order_value': df2['order_price'].sum() / len(df2) if len(df2) > 0 else 0,
-                'delivered_count': len(df2[df2['order_status'] == 'delivered']),
-                'cancelled_count': len(df2[df2['order_status'] == 'cancelled']),
-                'returned_count': len(df2[df2['order_status'] == 'returned']),
-                'return_cost': df2['return_cost'].sum() if 'return_cost' in df2.columns else 0,
-                'return_rate': round((len(df2[df2['order_status'] == 'returned']) / len(df2) * 100), 2) if len(df2) > 0 else 0,
+                'total_orders': total_orders2,
+                'total_quantity': int(df2['quantity'].sum()),
+                'total_revenue': round(total_rev2, 2),
+                'avg_order_value': round(total_rev2 / total_orders2, 2) if total_orders2 > 0 else 0,
+                'delivered_count': int(len(df2[df2['order_status'] == 'delivered'])),
+                'cancelled_count': int(len(df2[df2['order_status'] == 'cancelled'])),
+                'returned_count': ret_count2,
+                'return_cost': round(float(df2['return_cost'].sum()), 2),
+                'return_rate': round((ret_count2 / total_orders2 * 100), 2) if total_orders2 > 0 else 0,
                 'daily_revenue': daily_revenue2,
                 'return_reasons': return_reasons2,
                 'has_data': True
@@ -1931,15 +1976,15 @@ def get_two_month_comparison_data(seller_id, month1, year1, month2, year2):
         
         # Calculate differences and percentage changes
         if month1_data and month2_data:
-            revenue_diff = month2_data['total_revenue'] - month1_data['total_revenue']
+            revenue_diff = round(month2_data['total_revenue'] - month1_data['total_revenue'], 2)
             revenue_pct = round((revenue_diff / month1_data['total_revenue'] * 100), 2) if month1_data['total_revenue'] > 0 else 0
             
             orders_diff = month2_data['total_orders'] - month1_data['total_orders']
             orders_pct = round((orders_diff / month1_data['total_orders'] * 100), 2) if month1_data['total_orders'] > 0 else 0
             
-            return_rate_diff = month2_data['return_rate'] - month1_data['return_rate']
+            return_rate_diff = round(month2_data['return_rate'] - month1_data['return_rate'], 2)
             
-            aov_diff = month2_data['avg_order_value'] - month1_data['avg_order_value']
+            aov_diff = round(month2_data['avg_order_value'] - month1_data['avg_order_value'], 2)
             aov_pct = round((aov_diff / month1_data['avg_order_value'] * 100), 2) if month1_data['avg_order_value'] > 0 else 0
             
             comparison = {
@@ -1978,14 +2023,16 @@ def get_available_years_months(seller_id):
         for csv_path in csv_files:
             try:
                 df = pd.read_csv(csv_path)
-                df['parsed_date'] = df['order_date'].apply(parse_order_date)
-                df = df.dropna(subset=['parsed_date'])
-                df['year'] = df['parsed_date'].apply(lambda x: x.year)
-                all_years.update(df['year'].unique())
+                df.columns = [str(c).strip().lower() for c in df.columns]
+                if 'order_date' in df.columns:
+                    df['parsed_date'] = df['order_date'].apply(parse_order_date)
+                    df = df.dropna(subset=['parsed_date'])
+                    df['year'] = df['parsed_date'].apply(lambda x: x.year)
+                    all_years.update(df['year'].unique())
             except:
                 continue
         
-        return sorted(list(all_years)) if all_years else [2024, 2025, 2026]
+        return sorted([int(y) for y in all_years]) if all_years else [2024, 2025, 2026]
         
     except Exception as e:
         print(f"Error getting available dates: {e}")
@@ -1995,15 +2042,6 @@ def get_available_years_months(seller_id):
 def validate_rolling_period_data(seller_id, period_months):
     """
     Validate if sufficient data exists for rolling-period comparison.
-    
-    Args:
-        seller_id: The seller's ID
-        period_months: Number of months for rolling period (2, 3, or 6)
-    
-    Returns:
-        tuple: (is_valid: bool, message: str)
-            - is_valid: True if complete data exists for all N distinct calendar months
-            - message: User-friendly error message if invalid
     """
     try:
         from datetime import datetime
@@ -2019,6 +2057,7 @@ def validate_rolling_period_data(seller_id, period_months):
         for csv_path in csv_files:
             try:
                 df = pd.read_csv(csv_path)
+                df.columns = [str(c).strip().lower() for c in df.columns]
                 dataframes.append(df)
             except Exception as e:
                 print(f"Error reading {csv_path}: {e}")
@@ -2030,6 +2069,9 @@ def validate_rolling_period_data(seller_id, period_months):
         # Concatenate all dataframes
         df = pd.concat(dataframes, ignore_index=True)
         
+        if 'order_date' not in df.columns:
+            return False, "Order date column not found in uploaded files."
+            
         # Parse dates
         df['parsed_date'] = df['order_date'].apply(parse_order_date)
         df = df.dropna(subset=['parsed_date'])
@@ -2045,8 +2087,7 @@ def validate_rolling_period_data(seller_id, period_months):
         latest_date = df['parsed_date'].max()
         
         # Calculate the start date for the rolling period (N months before latest date)
-        # This ensures we look at complete calendar months
-        start_date = latest_date.replace(day=1)  # First day of the latest month
+        start_date = latest_date.replace(day=1)
         for _ in range(period_months - 1):
             if start_date.month == 1:
                 start_date = start_date.replace(year=start_date.year - 1, month=12)
@@ -2059,16 +2100,13 @@ def validate_rolling_period_data(seller_id, period_months):
         if df_filtered.empty:
             return False, f"No data found for the last {period_months} months. Please upload complete data."
         
-        # Count distinct months in the filtered data
-        distinct_months = df_filtered.groupby(['year', 'month']).ngroups
-        
         # Get the actual distinct month count
         distinct_months_set = df_filtered[['year', 'month']].drop_duplicates()
         actual_month_count = len(distinct_months_set)
         
         if actual_month_count < period_months:
             months_names = distinct_months_set.apply(
-                lambda x: datetime(x['year'], x['month'], 1).strftime('%B %Y'), axis=1
+                lambda x: datetime(int(x['year']), int(x['month']), 1).strftime('%B %Y'), axis=1
             ).tolist()
             return False, (
                 f"Insufficient data available for last {period_months} months comparison. "
@@ -2205,13 +2243,101 @@ def get_profile_photo(seller_id):
             b'</svg>'),
         mimetype='image/svg+xml'
     )
+def get_empty_pl_data():
+    return {
+        "category_labels": [],
+        "category_values": [],
+        "cards": {
+            "most_orders": {"category": "N/A", "value": 0},
+            "most_returns": {"category": "N/A", "return_pct": 0, "returns": 0, "orders": 0},
+            "most_revenue": {"category": "N/A", "value": 0},
+            "most_profit": {"category": "N/A", "value": 0}
+        },
+        "return_reason_labels": [],
+        "return_reason_costs": [],
+        "overall_insights": {
+            "total_sales": 0,
+            "total_return_cost": 0,
+            "return_pct": 0,
+            "top_return_reason": "N/A",
+            "top_return_reason_cost": 0,
+            "top_return_reason_pct": 0,
+            "top_sales_catalogue": "N/A",
+            "top_returns_catalogue": "N/A",
+            "top_sales_sku": "N/A",
+            "top_returns_sku": "N/A"
+        },
+        "category_analysis": {},
+        "solution_insights": []
+    }
+
 def calculate_pl_data(upload):
     import pandas as pd
 
-    df = pd.read_csv(upload.filepath)
+    if not upload or not getattr(upload, 'filepath', None) or not os.path.exists(upload.filepath):
+        return get_empty_pl_data()
+
+    try:
+        df = pd.read_csv(upload.filepath)
+    except Exception as e:
+        print(f"Error reading CSV in calculate_pl_data: {e}")
+        return get_empty_pl_data()
+
+    if df.empty:
+        return get_empty_pl_data()
+
+    # Normalize column names
+    df.columns = [str(c).strip().lower() for c in df.columns]
+
+    # Ensure required columns exist
+    if "order_price" in df.columns:
+        df["order_price"] = pd.to_numeric(df["order_price"], errors="coerce").fillna(0.0)
+    else:
+        df["order_price"] = 0.0
+
+    if "return_cost" in df.columns:
+        df["return_cost"] = pd.to_numeric(df["return_cost"], errors="coerce").fillna(0.0)
+    else:
+        df["return_cost"] = 0.0
+
+    if "category" in df.columns:
+        df["category"] = df["category"].fillna("Uncategorized").astype(str).str.strip()
+        df["category"] = df["category"].replace("", "Uncategorized")
+    else:
+        df["category"] = "Uncategorized"
+
+    if "order_id" not in df.columns:
+        df["order_id"] = range(1, len(df) + 1)
+
+    if "order_status" in df.columns:
+        df["order_status"] = df["order_status"].astype(str).str.strip().str.lower()
+    else:
+        df["order_status"] = "delivered"
+
+    if "return_reason" in df.columns:
+        df["return_reason"] = df["return_reason"].fillna("Other").astype(str).str.strip()
+        df["return_reason"] = df["return_reason"].replace("", "Other")
+    else:
+        df["return_reason"] = "Other"
+
+    if "catalogue_id" in df.columns:
+        df["catalogue_id"] = df["catalogue_id"].fillna("N/A").astype(str).str.strip()
+        df["catalogue_id"] = df["catalogue_id"].replace("", "N/A")
+    else:
+        df["catalogue_id"] = "N/A"
+
+    if "sku_description" in df.columns:
+        df["sku_description"] = df["sku_description"].fillna("N/A").astype(str).str.strip()
+        df["sku_description"] = df["sku_description"].replace("", "N/A")
+    else:
+        df["sku_description"] = "N/A"
 
     # Ensure date column (dayfirst=True for DD-MM-YYYY format)
-    df["order_date"] = pd.to_datetime(df["order_date"], dayfirst=True)
+    if "order_date" in df.columns:
+        df["order_date"] = pd.to_datetime(df["order_date"], dayfirst=True, errors="coerce")
+        df["order_date"] = df["order_date"].fillna(pd.Timestamp.now())
+    else:
+        df["order_date"] = pd.Timestamp.now()
 
     # =========================
     # ORDERS BY CATEGORY (BAR)
@@ -2238,48 +2364,69 @@ def calculate_pl_data(upload):
         .reset_index()
     )
 
-    # convert explicitly
     category_summary["orders"] = category_summary["orders"].astype(int)
     category_summary["revenue"] = category_summary["revenue"].astype(float)
     category_summary["return_cost"] = category_summary["return_cost"].astype(float)
-
-    category_summary["profit"] = (
-        category_summary["revenue"] - category_summary["return_cost"]
-    )
+    category_summary["profit"] = category_summary["revenue"] - category_summary["return_cost"]
 
     # =========================
     # MOST METRICS
     # =========================
-    most_orders_row = category_summary.loc[category_summary["orders"].idxmax()]
-    most_revenue_row = category_summary.loc[category_summary["revenue"].idxmax()]
-    most_profit_row = category_summary.loc[category_summary["profit"].idxmax()]
+    if not category_summary.empty:
+        most_orders_row = category_summary.loc[category_summary["orders"].idxmax()]
+        most_revenue_row = category_summary.loc[category_summary["revenue"].idxmax()]
+        most_profit_row = category_summary.loc[category_summary["profit"].idxmax()]
+        
+        most_orders_data = {
+            "category": str(most_orders_row["category"]),
+            "value": int(most_orders_row["orders"])
+        }
+        most_revenue_data = {
+            "category": str(most_revenue_row["category"]),
+            "value": float(round(most_revenue_row["revenue"], 2))
+        }
+        most_profit_data = {
+            "category": str(most_profit_row["category"]),
+            "value": float(round(most_profit_row["profit"], 2))
+        }
+    else:
+        most_orders_data = {"category": "N/A", "value": 0}
+        most_revenue_data = {"category": "N/A", "value": 0}
+        most_profit_data = {"category": "N/A", "value": 0}
 
     # =========================
     # MOST RETURNS (PERCENT)
     # =========================
     returned_df = df[df["order_status"] == "returned"]
 
-    returns_by_cat = (
-        returned_df.groupby("category")["order_id"]
-        .count()
-        .reset_index(name="returns")
-    )
-
-    returns_by_cat["returns"] = returns_by_cat["returns"].astype(int)
-
-    returns_by_cat = returns_by_cat.merge(
-        category_summary[["category", "orders"]],
-        on="category",
-        how="left"
-    )
-
-    returns_by_cat["return_pct"] = (
-        (returns_by_cat["returns"] / returns_by_cat["orders"]) * 100
-    )
-
-    most_returns_row = returns_by_cat.loc[
-        returns_by_cat["return_pct"].idxmax()
-    ]
+    if not returned_df.empty and not category_summary.empty:
+        returns_by_cat = (
+            returned_df.groupby("category")["order_id"]
+            .count()
+            .reset_index(name="returns")
+        )
+        returns_by_cat["returns"] = returns_by_cat["returns"].astype(int)
+        returns_by_cat = returns_by_cat.merge(
+            category_summary[["category", "orders"]],
+            on="category",
+            how="left"
+        )
+        returns_by_cat["orders"] = returns_by_cat["orders"].fillna(1).astype(int)
+        returns_by_cat["return_pct"] = (
+            (returns_by_cat["returns"] / returns_by_cat["orders"].replace(0, 1)) * 100
+        )
+        if not returns_by_cat.empty:
+            most_returns_row = returns_by_cat.loc[returns_by_cat["return_pct"].idxmax()]
+            most_returns_data = {
+                "category": str(most_returns_row["category"]),
+                "return_pct": float(round(most_returns_row["return_pct"], 2)),
+                "returns": int(most_returns_row["returns"]),
+                "orders": int(most_returns_row["orders"])
+            }
+        else:
+            most_returns_data = {"category": "N/A", "return_pct": 0, "returns": 0, "orders": 0}
+    else:
+        most_returns_data = {"category": "N/A", "return_pct": 0, "returns": 0, "orders": 0}
 
     # =========================
     # RETURN COST BY REASON (PIE)
@@ -2290,7 +2437,6 @@ def calculate_pl_data(upload):
             .sum()
             .reset_index()
         )
-
         return_reason_labels = [str(x) for x in rc_reason["return_reason"]]
         return_reason_costs = [float(x) for x in rc_reason["return_cost"]]
     else:
@@ -2327,22 +2473,32 @@ def calculate_pl_data(upload):
                 .count()
                 .reset_index(name="count")
             )
-
-            major_reason = str(
-                reason_dist.sort_values("count", ascending=False)
-                .iloc[0]["return_reason"]
-            )
-
-            rr_labels = [str(x) for x in reason_dist["return_reason"]]
-            rr_values = [int(x) for x in reason_dist["count"]]
+            if not reason_dist.empty:
+                major_reason = str(
+                    reason_dist.sort_values("count", ascending=False)
+                    .iloc[0]["return_reason"]
+                )
+                rr_labels = [str(x) for x in reason_dist["return_reason"]]
+                rr_values = [int(x) for x in reason_dist["count"]]
+            else:
+                major_reason = "No Returns"
+                rr_labels = []
+                rr_values = []
         else:
             major_reason = "No Returns"
             rr_labels = []
             rr_values = []
 
+        trend_dates = []
+        for d in trend["order_date"]:
+            if hasattr(d, "strftime"):
+                trend_dates.append(d.strftime("%Y-%m-%d"))
+            else:
+                trend_dates.append(str(d)[:10])
+
         category_analysis[str(cat)] = {
             "trend": {
-                "dates": [d.strftime("%Y-%m-%d") for d in trend["order_date"]],
+                "dates": trend_dates,
                 "revenue": [float(x) for x in trend["revenue"]],
                 "orders": [int(x) for x in trend["orders"]],
             },
@@ -2353,39 +2509,28 @@ def calculate_pl_data(upload):
             "metrics": {
                 "cat_orders": int(len(cat_df)),
                 "total_orders": total_orders,
-
-                "cat_sales": float(cat_df["order_price"].sum()),
-                "total_sales": total_sales,
-
+                "cat_sales": float(round(cat_df["order_price"].sum(), 2)),
+                "total_sales": float(round(total_sales, 2)),
                 "cat_returns": int(len(cat_returns)),
-
-                "cat_return_cost": float(cat_returns["return_cost"].sum()),
-
+                "cat_return_cost": float(round(cat_returns["return_cost"].sum(), 2)),
                 "return_cost_pct": float(
-                    (cat_returns["return_cost"].sum() / total_return_cost) * 100
+                    round((cat_returns["return_cost"].sum() / total_return_cost) * 100, 2)
                 ) if total_return_cost > 0 else 0.0,
-
                 "major_return_reason": major_reason
             }
         }
-       # =============================
+
+    # =============================
     # OVERALL DATA-DRIVEN INSIGHTS
     # =============================
-
-    # Total revenue & return cost
     total_revenue = float(df["order_price"].sum())
-
-    returned_df = df[df["order_status"] == "returned"]
-    total_return_cost = float(returned_df["return_cost"].sum())
+    total_return_cost = float(returned_df["return_cost"].sum()) if not returned_df.empty else 0.0
 
     return_pct = round(
         (total_return_cost / total_revenue) * 100, 2
-    ) if total_revenue > 0 else 0
+    ) if total_revenue > 0 else 0.0
 
-
-    # -----------------------------
     # Top return reason (by cost)
-    # -----------------------------
     if not returned_df.empty:
         reason_cost_df = (
             returned_df.groupby("return_reason")["return_cost"]
@@ -2393,74 +2538,56 @@ def calculate_pl_data(upload):
             .reset_index()
             .sort_values("return_cost", ascending=False)
         )
-
-        top_return_reason = str(reason_cost_df.iloc[0]["return_reason"])
-        top_return_reason_cost = float(reason_cost_df.iloc[0]["return_cost"])
-
-        top_return_reason_pct = round(
-            (top_return_reason_cost / total_return_cost) * 100, 2
-        ) if total_return_cost > 0 else 0
+        if not reason_cost_df.empty:
+            top_return_reason = str(reason_cost_df.iloc[0]["return_reason"])
+            top_return_reason_cost = float(reason_cost_df.iloc[0]["return_cost"])
+            top_return_reason_pct = round(
+                (top_return_reason_cost / total_return_cost) * 100, 2
+            ) if total_return_cost > 0 else 0.0
+        else:
+            top_return_reason = "No Returns"
+            top_return_reason_cost = 0.0
+            top_return_reason_pct = 0.0
     else:
         top_return_reason = "No Returns"
         top_return_reason_cost = 0.0
         top_return_reason_pct = 0.0
 
-
-    # -----------------------------
     # Top catalogue (sales & returns)
-    # -----------------------------
-    top_sales_catalogue = (
-        df.groupby("catalogue_id")["order_price"]
-        .sum()
-        .idxmax()
-    )
+    cat_sales = df.groupby("catalogue_id")["order_price"].sum()
+    top_sales_catalogue = str(cat_sales.idxmax()) if not cat_sales.empty else "N/A"
 
-    top_returns_catalogue = (
-        returned_df.groupby("catalogue_id")["order_id"]
-        .count()
-        .idxmax()
-    ) if not returned_df.empty else "N/A"
+    if not returned_df.empty:
+        cat_ret = returned_df.groupby("catalogue_id")["order_id"].count()
+        top_returns_catalogue = str(cat_ret.idxmax()) if not cat_ret.empty else "N/A"
+    else:
+        top_returns_catalogue = "N/A"
 
-
-    # -----------------------------
     # Top SKU (sales & returns)
-    # -----------------------------
-    top_sales_sku = (
-        df.groupby("sku_description")["order_price"]
-        .sum()
-        .idxmax()
-    )
+    sku_sales = df.groupby("sku_description")["order_price"].sum()
+    top_sales_sku = str(sku_sales.idxmax()) if not sku_sales.empty else "N/A"
 
-    top_returns_sku = (
-        returned_df.groupby("sku_description")["order_id"]
-        .count()
-        .idxmax()
-    ) if not returned_df.empty else "N/A"
+    if not returned_df.empty:
+        sku_ret = returned_df.groupby("sku_description")["order_id"].count()
+        top_returns_sku = str(sku_ret.idxmax()) if not sku_ret.empty else "N/A"
+    else:
+        top_returns_sku = "N/A"
 
-
-    # -----------------------------
     # FINAL INSIGHTS OBJECT
-    # -----------------------------
     overall_insights = {
         "total_sales": round(total_revenue, 2),
         "total_return_cost": round(total_return_cost, 2),
         "return_pct": return_pct,
-
         "top_return_reason": top_return_reason,
         "top_return_reason_cost": round(top_return_reason_cost, 2),
         "top_return_reason_pct": top_return_reason_pct,
-
-        "top_sales_catalogue": str(top_sales_catalogue),
-        "top_returns_catalogue": str(top_returns_catalogue),
-
-        "top_sales_sku": str(top_sales_sku),
-        "top_returns_sku": str(top_returns_sku)
+        "top_sales_catalogue": top_sales_catalogue,
+        "top_returns_catalogue": top_returns_catalogue,
+        "top_sales_sku": top_sales_sku,
+        "top_returns_sku": top_returns_sku
     }
-    # =============================
-    # ACTIONABLE SOLUTION INSIGHTS
-    # =============================
 
-    # Mapping return reasons to solutions
+    # ACTIONABLE SOLUTION INSIGHTS
     return_reason_solutions = {
         "Damaged": "Improve packaging quality, add protective layers, and audit courier handling for fragile items.",
         "Size Issue": "Add detailed size charts, fit videos, and customer size guidance to reduce mismatch.",
@@ -2469,90 +2596,50 @@ def calculate_pl_data(upload):
         "Late Delivery": "Optimize logistics partners and set realistic delivery expectations on listings."
     }
 
-    top_reason = overall_insights["top_return_reason"]
     top_reason_solution = return_reason_solutions.get(
         top_reason,
         "Investigate this return reason closely and implement targeted corrective measures."
     )
 
     # Least selling category
-    category_sales = (
-        df.groupby("category")["order_price"]
-        .sum()
-        .sort_values()
-    )
-    least_selling_category = category_sales.index[0]
-
-    # Highest return catalogue
-    returns_catalogue = (
-        df[df["order_status"] == "returned"]
-        .groupby("catalogue_id")["order_id"]
-        .count()
-        .sort_values(ascending=False)
-    )
-    top_return_catalogue = returns_catalogue.index[0]
-
-    # Highest return SKU
-    returns_sku = (
-        df[df["order_status"] == "returned"]
-        .groupby("sku_description")["order_id"]
-        .count()
-        .sort_values(ascending=False)
-    )
-    top_return_sku = returns_sku.index[0]
+    if not category_summary.empty:
+        category_sales_sorted = category_summary.sort_values("revenue")
+        least_selling_category = str(category_sales_sorted.iloc[0]["category"])
+    else:
+        least_selling_category = "N/A"
 
     solution_insights = [
         {
             "text": f"The major return driver is '{top_reason}'. To reduce losses, you should {top_reason_solution}"
         },
         {
-            "text": f"The category '{least_selling_category}' shows weak sales performance. Running targeted ads and optimizing listing visibility can help revive demand."
+            "text": f"The category '{least_selling_category}' shows lower sales performance. Running targeted ads and optimizing listing visibility can help revive demand."
         },
         {
-            "text": f"Catalogue '{top_return_catalogue}' contributes the highest returns. Reviewing its product quality, images, and descriptions can significantly cut losses."
+            "text": f"Catalogue '{top_returns_catalogue}' contributes highest returns. Reviewing its product quality, images, and descriptions can significantly cut losses."
         },
         {
-            "text": f"SKU '{top_return_sku}' has the highest return frequency. Consider pausing ads, revising the listing, or fixing underlying quality issues."
+            "text": f"SKU '{top_returns_sku}' has the highest return frequency. Consider pausing ads, revising the listing, or fixing underlying quality issues."
         },
         {
-            "text": f"Returns are consuming a large share of revenue. Prioritizing return reduction will directly improve net profitability."
+            "text": f"Returns account for {return_pct}% of revenue. Prioritizing return reduction will directly improve net profitability."
         }
     ]
-        # =========================
-        # FINAL RETURN
-        # =========================
+
     return {
         "category_labels": category_labels,
         "category_values": category_values,
-
         "cards": {
-            "most_orders": {
-                "category": str(most_orders_row["category"]),
-                "value": int(most_orders_row["orders"])
-            },
-            "most_returns": {
-                "category": str(most_returns_row["category"]),
-                "return_pct": float(round(most_returns_row["return_pct"], 2)),
-                "returns": int(most_returns_row["returns"]),
-                "orders": int(most_returns_row["orders"])
-            },
-            "most_revenue": {
-                "category": str(most_revenue_row["category"]),
-                "value": float(round(most_revenue_row["revenue"], 2))
-            },
-            "most_profit": {
-                "category": str(most_profit_row["category"]),
-                "value": float(round(most_profit_row["profit"], 2))
-            }
+            "most_orders": most_orders_data,
+            "most_returns": most_returns_data,
+            "most_revenue": most_revenue_data,
+            "most_profit": most_profit_data
         },
-
         "return_reason_labels": return_reason_labels,
         "return_reason_costs": return_reason_costs,
-         "overall_insights": overall_insights,
+        "overall_insights": overall_insights,
         "category_analysis": category_analysis,
-         "overall_insights": overall_insights,
-         "solution_insights": solution_insights
-
+        "solution_insights": solution_insights
     }
 
 
@@ -2600,32 +2687,7 @@ def pl_page():
     # Check if CSV path is valid
     if not csv_path or not os.path.exists(csv_path):
         flash('No CSV file uploaded yet. Please upload a CSV file to view Profit & Loss analysis.', 'warning')
-        data = {
-            "category_labels": [],
-            "category_values": [],
-            "cards": {
-                "most_orders": {"category": "N/A", "value": 0},
-                "most_returns": {"category": "N/A", "return_pct": 0, "returns": 0, "orders": 0},
-                "most_revenue": {"category": "N/A", "value": 0},
-                "most_profit": {"category": "N/A", "value": 0}
-            },
-            "return_reason_labels": [],
-            "return_reason_costs": [],
-            "overall_insights": {
-                "total_sales": 0,
-                "total_return_cost": 0,
-                "return_pct": 0,
-                "top_return_reason": "N/A",
-                "top_return_reason_cost": 0,
-                "top_return_reason_pct": 0,
-                "top_sales_catalogue": "N/A",
-                "top_returns_catalogue": "N/A",
-                "top_sales_sku": "N/A",
-                "top_returns_sku": "N/A"
-            },
-            "category_analysis": {},
-            "solution_insights": []
-        }
+        data = get_empty_pl_data()
         return render_template('pl.html', name=session.get('seller_name'), data=data, seller=seller, uploads=uploads, selected_upload=selected_upload, current_index=current_index)
     
     try:
@@ -2640,32 +2702,7 @@ def pl_page():
     except Exception as e:
         print(f"Error processing PL data: {e}")
         flash('Error processing data. Please check the CSV file format.', 'warning')
-        pl_data = {
-            "category_labels": [],
-            "category_values": [],
-            "cards": {
-                "most_orders": {"category": "N/A", "value": 0},
-                "most_returns": {"category": "N/A", "return_pct": 0, "returns": 0, "orders": 0},
-                "most_revenue": {"category": "N/A", "value": 0},
-                "most_profit": {"category": "N/A", "value": 0}
-            },
-            "return_reason_labels": [],
-            "return_reason_costs": [],
-            "overall_insights": {
-                "total_sales": 0,
-                "total_return_cost": 0,
-                "return_pct": 0,
-                "top_return_reason": "N/A",
-                "top_return_reason_cost": 0,
-                "top_return_reason_pct": 0,
-                "top_sales_catalogue": "N/A",
-                "top_returns_catalogue": "N/A",
-                "top_sales_sku": "N/A",
-                "top_returns_sku": "N/A"
-            },
-            "category_analysis": {},
-            "solution_insights": []
-        }
+        pl_data = get_empty_pl_data()
     
     return render_template(
         "pl.html",

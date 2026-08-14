@@ -683,8 +683,8 @@
         const dailyRevenue2 = {{ comparison_data.month2.daily_revenue | tojson }};
         
         const labels = Array.from({length: 31}, (_, i) => i + 1);
-        const data1 = labels.map(day => dailyRevenue1[day] !== undefined ? dailyRevenue1[day] : null);
-        const data2 = labels.map(day => dailyRevenue2[day] !== undefined ? dailyRevenue2[day] : null);
+        const data1 = labels.map(day => (dailyRevenue1 && (dailyRevenue1[day] !== undefined ? dailyRevenue1[day] : (dailyRevenue1[String(day)] !== undefined ? dailyRevenue1[String(day)] : null))));
+        const data2 = labels.map(day => (dailyRevenue2 && (dailyRevenue2[day] !== undefined ? dailyRevenue2[day] : (dailyRevenue2[String(day)] !== undefined ? dailyRevenue2[String(day)] : null))));
         
         const revenueCtx = document.getElementById('revenueChart').getContext('2d');
         new Chart(revenueCtx, {
