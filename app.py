@@ -2626,7 +2626,7 @@ def calculate_pl_data(upload):
     }
 
     top_reason_solution = return_reason_solutions.get(
-        top_reason,
+        top_return_reason,
         "Investigate this return reason closely and implement targeted corrective measures."
     )
 
@@ -2639,7 +2639,7 @@ def calculate_pl_data(upload):
 
     solution_insights = [
         {
-            "text": f"The major return driver is '{top_reason}'. To reduce losses, you should {top_reason_solution}"
+            "text": f"The major return driver is '{top_return_reason}'. To reduce losses, you should {top_reason_solution}"
         },
         {
             "text": f"The category '{least_selling_category}' shows lower sales performance. Running targeted ads and optimizing listing visibility can help revive demand."
