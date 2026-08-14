@@ -7,6 +7,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, make_response
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.pool import NullPool
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from functools import wraps
@@ -19,6 +20,9 @@ import pandas as pd
 from PIL import Image
 import io as pil_io
 from datetime import datetime, timedelta
+
+# Detect Vercel serverless environment
+IS_VERCEL = bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV'))
 
 # Load environment variables from .env file
 try:
@@ -45,27 +49,44 @@ if db_url:
         db_url = db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_pre_ping': True,
-    'pool_recycle': 300,
-    'connect_args': {} if not db_url.startswith('sqlite') else {},
-}
 
-# Upload folder - use absolute path for Render compatibility
-app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
-app.config['PROFILE_PHOTO_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads', 'profile')
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+# Vercel is serverless — use NullPool so connections aren't held between
+# invocations (regular pools exhaust the DB connection limit quickly).
+# On traditional servers (Render), use a normal pool with recycling.
+if IS_VERCEL:
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'poolclass': NullPool,
+        'pool_pre_ping': True,
+    }
+else:
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+    }
+
+# Upload folder:
+#   Vercel  → /tmp (only writable location; files are ephemeral per invocation)
+#   Render  → <project>/uploads (persistent within the dyno)
+if IS_VERCEL:
+    _UPLOAD_BASE = '/tmp/retrix_uploads'
+else:
+    _UPLOAD_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+
+app.config['UPLOAD_FOLDER'] = _UPLOAD_BASE
+app.config['PROFILE_PHOTO_FOLDER'] = os.path.join(_UPLOAD_BASE, 'profile')
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
 ALLOWED_EXTENSIONS = {'csv'}
 ALLOWED_PHOTO_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-# Ensure upload directories exist
+# Create upload directories (safe: /tmp is always writable; project dir on Render)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['PROFILE_PHOTO_FOLDER'], exist_ok=True)
 
-# Also create static uploads directory for profile photos
-static_uploads = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
-os.makedirs(static_uploads, exist_ok=True)
-os.makedirs(os.path.join(static_uploads, 'profile'), exist_ok=True)
+# Static uploads dir — only create on non-Vercel (Vercel filesystem is read-only)
+if not IS_VERCEL:
+    static_uploads = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
+    os.makedirs(static_uploads, exist_ok=True)
+    os.makedirs(os.path.join(static_uploads, 'profile'), exist_ok=True)
 
 try:
     db = SQLAlchemy(app)

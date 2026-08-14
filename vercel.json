@@ -3,10 +3,17 @@
   "builds": [
     {
       "src": "app.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
     }
   ],
   "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "app.py"
@@ -16,6 +23,7 @@
     "OMP_NUM_THREADS": "1",
     "OPENBLAS_NUM_THREADS": "1",
     "MKL_NUM_THREADS": "1",
-    "NUMEXPR_NUM_THREADS": "1"
+    "NUMEXPR_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1"
   }
 }

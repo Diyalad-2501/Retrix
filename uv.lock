@@ -138,18 +138,6 @@ wheels = [
 ]
 
 [[package]]
-name = "gunicorn"
-version = "21.2.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "packaging" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/06/89/acd9879fa6a5309b4bf16a5a8855f1e58f26d38e0c18ede9b3a70996b021/gunicorn-21.2.0.tar.gz", hash = "sha256:88ec8bff1d634f98e61b9f65bc4bf3cd918a90806c6f5c48bc5603849ec81033", size = 3632557, upload-time = "2023-07-19T11:46:46.917Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0e/2a/c3a878eccb100ccddf45c50b6b8db8cf3301a6adede6e31d48e8531cab13/gunicorn-21.2.0-py3-none-any.whl", hash = "sha256:3213aa5e8c24949e792bcacfc176fef362e7aac80b76c56f6b5122bf350722f0", size = 80176, upload-time = "2023-07-19T11:46:44.51Z" },
-]
-
-[[package]]
 name = "itsdangerous"
 version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -302,15 +290,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/42/e8/af028681d493814ca9c2ff8106fc62a4a32e4e0ae14602c2a98fc7b741c8/openpyxl-3.1.2.tar.gz", hash = "sha256:a6f5977418eff3b2d5500d54d9db50c8277a368436f4e4f8ddb1be3422870184", size = 185977, upload-time = "2023-03-11T16:58:38.78Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6a/94/a59521de836ef0da54aaf50da6c4da8fb4072fb3053fa71f052fd9399e7a/openpyxl-3.1.2-py2.py3-none-any.whl", hash = "sha256:f91456ead12ab3c6c2e9491cf33ba6d08357d802192379bb482f1033ade496f5", size = 249985, upload-time = "2023-03-11T16:58:36.257Z" },
-]
-
-[[package]]
-name = "packaging"
-version = "26.3"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7d/fa/3944b40b07da9ce895c0e6303a5ab7d53da063554f534556b134a54d6093/packaging-26.3.tar.gz", hash = "sha256:94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79", size = 313412, upload-time = "2026-08-04T18:15:28.737Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl", hash = "sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c", size = 129956, upload-time = "2026-08-04T18:15:27.159Z" },
 ]
 
 [[package]]
@@ -537,13 +516,13 @@ source = { editable = "." }
 dependencies = [
     { name = "flask" },
     { name = "flask-sqlalchemy" },
-    { name = "gunicorn" },
     { name = "numpy" },
     { name = "openpyxl" },
     { name = "pandas" },
     { name = "pillow" },
     { name = "psycopg", extra = ["binary"] },
     { name = "python-dotenv" },
+    { name = "sqlalchemy" },
     { name = "werkzeug" },
 ]
 
@@ -551,13 +530,13 @@ dependencies = [
 requires-dist = [
     { name = "flask", specifier = "==3.0.0" },
     { name = "flask-sqlalchemy", specifier = "==3.1.1" },
-    { name = "gunicorn", specifier = "==21.2.0" },
     { name = "numpy", specifier = "==2.2.3" },
     { name = "openpyxl", specifier = "==3.1.2" },
     { name = "pandas", specifier = "==2.2.3" },
     { name = "pillow", specifier = ">=10.2.0" },
     { name = "psycopg", extras = ["binary"], specifier = "==3.2.13" },
     { name = "python-dotenv", specifier = "==1.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
     { name = "werkzeug", specifier = "==3.0.1" },
 ]
 
