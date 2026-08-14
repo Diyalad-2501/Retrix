@@ -45,6 +45,11 @@ if db_url:
         db_url = db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,
+    'pool_recycle': 300,
+    'connect_args': {} if not db_url.startswith('sqlite') else {},
+}
 
 # Upload folder - use absolute path for Render compatibility
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
@@ -62,7 +67,12 @@ static_uploads = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'stati
 os.makedirs(static_uploads, exist_ok=True)
 os.makedirs(os.path.join(static_uploads, 'profile'), exist_ok=True)
 
-db = SQLAlchemy(app)
+try:
+    db = SQLAlchemy(app)
+except Exception as e:
+    print(f"[WARNING] SQLAlchemy init error: {e}")
+    db = SQLAlchemy()
+    db.init_app(app)
 
 # Database Models
 class Seller(db.Model):
