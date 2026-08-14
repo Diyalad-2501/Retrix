@@ -1818,12 +1818,25 @@ def seller_comparison():
 
 
 def parse_order_date(date_str):
-    """Parse date string in DD-MM-YYYY format"""
-    try:
-        from datetime import datetime
-        return datetime.strptime(date_str, '%d-%m-%Y')
-    except:
+    """Parse date string supporting multiple formats (DD-MM-YYYY, YYYY-MM-DD, etc.)"""
+    from datetime import datetime
+    if pd.isna(date_str) or date_str is None:
         return None
+    if isinstance(date_str, (datetime, pd.Timestamp)):
+        return date_str
+    s = str(date_str).strip()
+    for fmt in ('%d-%m-%Y', '%Y-%m-%d', '%d/%m/%Y', '%Y/%m/%d', '%m/%d/%Y'):
+        try:
+            return datetime.strptime(s, fmt)
+        except ValueError:
+            pass
+    try:
+        ts = pd.to_datetime(s, errors='coerce')
+        if pd.notnull(ts):
+            return ts.to_pydatetime()
+    except Exception:
+        pass
+    return None
 
 def get_all_csv_files_for_seller(seller_id):
     """Get all CSV files uploaded by a seller"""
