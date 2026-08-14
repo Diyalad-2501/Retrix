@@ -39,14 +39,18 @@ os.environ['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'hard-to-guess-string
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'hard-to-guess-string'
 
-# Use DATABASE_URL from environment (Render provides this) or fallback to SQLite
-# Use postgresql+psycopg for psycopg3 compatibility
-db_url = os.environ.get('DATABASE_URL') or 'sqlite:///retrix.db'
-if db_url:
-    if db_url.startswith('postgres://'):
-        db_url = db_url.replace('postgres://', 'postgresql+psycopg://', 1)
-    elif db_url.startswith('postgresql://') and '+psycopg' not in db_url and '+psycopg2' not in db_url:
-        db_url = db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+# Use DATABASE_URL from environment or fallback to SQLite.
+# On Vercel the filesystem is read-only except /tmp, so point SQLite there.
+db_url = os.environ.get('DATABASE_URL')
+if not db_url:
+    if IS_VERCEL:
+        db_url = 'sqlite:////tmp/retrix.db'   # absolute path → /tmp (writable)
+    else:
+        db_url = 'sqlite:///retrix.db'        # relative path → project dir
+if db_url.startswith('postgres://'):
+    db_url = db_url.replace('postgres://', 'postgresql+psycopg://', 1)
+elif db_url.startswith('postgresql://') and '+psycopg' not in db_url and '+psycopg2' not in db_url:
+    db_url = db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -2758,13 +2762,25 @@ def pl_view_upload(upload_id):
     
     return redirect(url_for('pl_page', upload_id=upload_id))
 
-# Initialize database on first request
+# Initialize database tables.
+# On Vercel (serverless) hasattr() state doesn't persist across invocations,
+# so always attempt create_all — it is safe to call repeatedly (no-op if
+# tables already exist) and cheap on PostgreSQL with NullPool.
 @app.before_request
 def initialize_database():
-    if not hasattr(initialize_database, 'initialized'):
-        initialize_database.initialized = True
-        with app.app_context():
+    if IS_VERCEL:
+        # Serverless: run on every cold start (hasattr won't persist)
+        try:
             db.create_all()
+        except Exception as e:
+            print(f"[WARNING] db.create_all failed: {e}")
+    elif not hasattr(initialize_database, 'initialized'):
+        # Traditional server: run once per process
+        initialize_database.initialized = True
+        try:
+            db.create_all()
+        except Exception as e:
+            print(f"[WARNING] db.create_all failed: {e}")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
