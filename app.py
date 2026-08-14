@@ -2278,7 +2278,7 @@ def calculate_pl_data(upload):
         return get_empty_pl_data()
 
     try:
-        df = pd.read_csv(upload.filepath)
+        df = pd.read_csv(upload.filepath, low_memory=False)
     except Exception as e:
         print(f"Error reading CSV in calculate_pl_data: {e}")
         return get_empty_pl_data()
@@ -2286,23 +2286,17 @@ def calculate_pl_data(upload):
     if df.empty:
         return get_empty_pl_data()
 
-    # Normalize column names
+    # Normalize column names and make a clean copy to avoid SettingWithCopyWarning
+    df = df.copy()
     df.columns = [str(c).strip().lower() for c in df.columns]
 
-    # Ensure required columns exist
-    if "order_price" in df.columns:
-        df["order_price"] = pd.to_numeric(df["order_price"], errors="coerce").fillna(0.0)
-    else:
-        df["order_price"] = 0.0
-
-    if "return_cost" in df.columns:
-        df["return_cost"] = pd.to_numeric(df["return_cost"], errors="coerce").fillna(0.0)
-    else:
-        df["return_cost"] = 0.0
+    # Ensure required columns exist with safe defaults
+    df["order_price"] = pd.to_numeric(df.get("order_price", 0), errors="coerce").fillna(0.0)
+    df["return_cost"] = pd.to_numeric(df.get("return_cost", 0), errors="coerce").fillna(0.0)
 
     if "category" in df.columns:
         df["category"] = df["category"].fillna("Uncategorized").astype(str).str.strip()
-        df["category"] = df["category"].replace("", "Uncategorized")
+        df.loc[df["category"] == "", "category"] = "Uncategorized"
     else:
         df["category"] = "Uncategorized"
 
@@ -2316,26 +2310,26 @@ def calculate_pl_data(upload):
 
     if "return_reason" in df.columns:
         df["return_reason"] = df["return_reason"].fillna("Other").astype(str).str.strip()
-        df["return_reason"] = df["return_reason"].replace("", "Other")
+        df.loc[df["return_reason"] == "", "return_reason"] = "Other"
     else:
         df["return_reason"] = "Other"
 
     if "catalogue_id" in df.columns:
         df["catalogue_id"] = df["catalogue_id"].fillna("N/A").astype(str).str.strip()
-        df["catalogue_id"] = df["catalogue_id"].replace("", "N/A")
+        df.loc[df["catalogue_id"] == "", "catalogue_id"] = "N/A"
     else:
         df["catalogue_id"] = "N/A"
 
     if "sku_description" in df.columns:
         df["sku_description"] = df["sku_description"].fillna("N/A").astype(str).str.strip()
-        df["sku_description"] = df["sku_description"].replace("", "N/A")
+        df.loc[df["sku_description"] == "", "sku_description"] = "N/A"
     else:
         df["sku_description"] = "N/A"
 
     # Ensure date column (dayfirst=True for DD-MM-YYYY format)
     if "order_date" in df.columns:
         df["order_date"] = pd.to_datetime(df["order_date"], dayfirst=True, errors="coerce")
-        df["order_date"] = df["order_date"].fillna(pd.Timestamp.now())
+        df.loc[df["order_date"].isnull(), "order_date"] = pd.Timestamp.now()
     else:
         df["order_date"] = pd.Timestamp.now()
 
